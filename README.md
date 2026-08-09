@@ -17,7 +17,7 @@ npm run prisma:migrate   # cần MySQL đang chạy, khớp DATABASE_URL
 npm run start:dev
 ```
 
-API mặc định chạy tại `http://localhost:3001/api/v1`, Swagger docs tại `http://localhost:3001/docs`.
+API mặc định chạy tại `http://localhost:5550/api/v1`, Swagger docs tại `http://localhost:5550/docs`.
 
 ## Cấu trúc thư mục
 ```

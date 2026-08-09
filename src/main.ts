@@ -41,7 +41,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document);
 
-  const port = configService.get<number>('PORT', 3001);
+  const port = configService.get<number>('PORT', 5550);
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`Tripora API running on http://localhost:${port}/${apiPrefix} (docs: /docs)`);
