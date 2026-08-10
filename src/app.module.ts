@@ -5,6 +5,9 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { DestinationModule } from './modules/destination/destination.module';
+import { PropertyModule } from './modules/property/property.module';
+import { RoomModule } from './modules/room/room.module';
+import { RoomAvailabilityModule } from './modules/room-availability/room-availability.module';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { DestinationModule } from './modules/destination/destination.module';
     AuthModule,
     UserModule,
     DestinationModule,
+    PropertyModule,
+    RoomModule,
+    RoomAvailabilityModule,
   ],
 })
 export class AppModule {}
