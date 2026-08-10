@@ -1,20 +1,24 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Endpoint thật đã triển khai ở backend/ — khớp 1-1 với .claude/api-spec.md. Chọn environment \"Tripora Local\" trước khi chạy (chứa baseUrl + tài khoản dev seed từ prisma/seed.ts). Chạy theo thứ tự: Auth > Destination > Property > Room > Room Availability để các biến {{...Id}}/{{...AccessToken}} được tự set qua Test script.",
+    "description": "Endpoint thật đã triển khai ở backend/ — khớp 1-1 với .claude/api-spec.md. Chọn environment \"Tripora Local\" trước khi chạy (chứa baseUrl + tài khoản dev seed từ prisma/seed.ts + paymentWebhookSecret). Chạy theo thứ tự: Auth > Destination > Property > Room > Room Availability > Booking > Payment > Refund để các biến {{...Id}}/{{...AccessToken}} được tự set qua Test/Pre-request script.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5550/api/v1" },
     { "key": "adminAccessToken", "value": "" },
     { "key": "partnerAccessToken", "value": "" },
+    { "key": "travelerAccessToken", "value": "" },
     { "key": "destinationId", "value": "" },
     { "key": "newDestinationId", "value": "" },
     { "key": "propertyId", "value": "" },
     { "key": "deletablePropertyId", "value": "" },
     { "key": "roomId", "value": "" },
     { "key": "deletableRoomId", "value": "" },
-    { "key": "roomAvailabilityId", "value": "" }
+    { "key": "roomAvailabilityId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "webhookTransactionId", "value": "" },
+    { "key": "refundId", "value": "" }
   ],
   "item": [
     {
@@ -22,15 +26,30 @@
       "item": [
         {
           "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data && json.data.accessToken) {",
+                  "  pm.collectionVariables.set('travelerAccessToken', json.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"new-traveler@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Traveler\"\n}"
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"Passw0rd!\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Traveler\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
-            "description": "Đăng ký user mới, role mặc định TRAVELER. Đổi email nếu chạy lại (409 nếu email đã tồn tại)."
+            "description": "Đăng ký user mới, role mặc định TRAVELER — dùng {{$randomEmail}} (biến động Postman) để chạy lại nhiều lần không bị 409. Lưu accessToken vào travelerAccessToken, dùng cho folder Booking."
           },
           "response": []
         },
@@ -588,6 +607,161 @@
             "body": { "mode": "raw", "raw": "{\n  \"price\": 2500000\n}" },
             "url": { "raw": "{{baseUrl}}/room-availability/{{roomAvailabilityId}}", "host": ["{{baseUrl}}"], "path": ["room-availability", "{{roomAvailabilityId}}"] },
             "description": "400 nếu total mới nhỏ hơn số lượng đã đặt (total cũ - available cũ)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Create Booking (Traveler)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('bookingId', json.data.id);",
+                  "  pm.collectionVariables.set('bookingTotal', json.data.total);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{travelerAccessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-21\",\n  \"quantity\": 1,\n  \"guestName\": \"Postman Test\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] },
+            "description": "Cần chạy Register (Auth, lưu travelerAccessToken) + Upsert Availability (Room Availability, tạo tồn kho ngày 2026-12-20 cho {{roomId}}) trước. Trừ tồn kho atomic, snapshot giá vào BookingItem, tạo kèm 1 Payment PENDING. Lưu id vào bookingId, total vào bookingTotal (dùng cho Payment webhook)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking by Id (Owner)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{travelerAccessToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["bookings", "{{bookingId}}"] },
+            "description": "403 nếu không phải chủ Booking/Partner liên quan/Admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings (Traveler)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{travelerAccessToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/bookings/mine?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["bookings", "mine"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Partner Bookings (Partner)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{partnerAccessToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/bookings/partner?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["bookings", "partner"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] },
+            "description": "403 nếu chưa có hồ sơ Partner."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "Confirm Payment (Webhook Success)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const bookingId = pm.collectionVariables.get('bookingId');",
+                  "const amount = pm.collectionVariables.get('bookingTotal');",
+                  "const transactionId = 'TXN-' + Date.now();",
+                  "const secret = pm.environment.get('paymentWebhookSecret');",
+                  "const payload = `${bookingId}.${transactionId}.${amount}.SUCCESS`;",
+                  "const signature = CryptoJS.HmacSHA256(payload, secret).toString();",
+                  "pm.collectionVariables.set('webhookTransactionId', transactionId);",
+                  "pm.collectionVariables.set('webhookSignature', signature);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"transactionId\": \"{{webhookTransactionId}}\",\n  \"provider\": \"postman-test\",\n  \"amount\": {{bookingTotal}},\n  \"status\": \"SUCCESS\",\n  \"signature\": \"{{webhookSignature}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/payments/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "webhook"] },
+            "description": "Placeholder giả lập callback Gateway thật (chưa tích hợp VNPAY/Momo/Stripe). Không dùng JWT — xác thực bằng chữ ký HMAC-SHA256 (Pre-request script tự tính, cần biến environment paymentWebhookSecret khớp PAYMENT_WEBHOOK_SECRET ở backend/.env). SUCCESS -> Booking CONFIRMED/PAID. 400 nếu amount không khớp Payment.amount hoặc Booking không còn ở trạng thái chờ thanh toán."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Refund",
+      "item": [
+        {
+          "name": "Cancel Paid Booking (creates Refund)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data && json.data.refunds && json.data.refunds[0]) {",
+                  "  pm.collectionVariables.set('refundId', json.data.refunds[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{travelerAccessToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/bookings/{{bookingId}}/cancel", "host": ["{{baseUrl}}"], "path": ["bookings", "{{bookingId}}", "cancel"] },
+            "description": "Cần chạy Confirm Payment (Webhook Success) trước để Booking ở CONFIRMED/PAID — hủy Booking đã thanh toán sẽ tự tạo Refund (PROCESSING nếu %hoàn > 0). Hoàn tồn kho atomic. Lưu id vào refundId."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Refund (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminAccessToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"COMPLETED\"\n}" },
+            "url": { "raw": "{{baseUrl}}/refunds/{{refundId}}/complete", "host": ["{{baseUrl}}"], "path": ["refunds", "{{refundId}}", "complete"] },
+            "description": "Placeholder thay cho Webhook Gateway hoàn tiền thật. 400 nếu Refund không ở trạng thái PROCESSING. COMPLETED -> Booking.paymentStatus = REFUNDED."
           },
           "response": []
         }

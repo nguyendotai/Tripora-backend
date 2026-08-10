@@ -28,3 +28,6 @@ Thumbs.db
 
 # prisma
 prisma/*.db
+
+# one-off scripts (real credentials — never commit)
+*-tmp.ts

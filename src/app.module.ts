@@ -8,6 +8,9 @@ import { DestinationModule } from './modules/destination/destination.module';
 import { PropertyModule } from './modules/property/property.module';
 import { RoomModule } from './modules/room/room.module';
 import { RoomAvailabilityModule } from './modules/room-availability/room-availability.module';
+import { BookingModule } from './modules/booking/booking.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { RefundModule } from './modules/refund/refund.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { RoomAvailabilityModule } from './modules/room-availability/room-availab
     PropertyModule,
     RoomModule,
     RoomAvailabilityModule,
+    BookingModule,
+    PaymentModule,
+    RefundModule,
   ],
 })
 export class AppModule {}
