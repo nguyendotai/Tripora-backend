@@ -19,6 +19,9 @@ npm run start:dev
 
 API mặc định chạy tại `http://localhost:5550/api/v1`, Swagger docs tại `http://localhost:5550/docs`.
 
+## Test API bằng Postman
+Import cả 2 file trong `postman/` vào Postman: `tripora-api.postman_collection.json` (danh sách request, nhóm theo module — khớp 1-1 với `.claude/api-spec.md`) và `tripora-api.postman_environment.json` (biến `baseUrl` + tài khoản dev từ `prisma/seed.ts`). Chọn environment **Tripora Local** trước khi chạy. Chạy lần lượt `Auth > Login (Admin)` / `Login (Partner)` trước — Test script tự lưu `accessToken`/id vào biến collection để các request sau dùng lại (không cần copy tay).
+
 ## Cấu trúc thư mục
 ```
 src/
@@ -29,6 +32,9 @@ src/
   shared/      # helper/util/constant/type dùng chung
 prisma/
   schema.prisma
+postman/
+  tripora-api.postman_collection.json
+  tripora-api.postman_environment.json
 ```
 
 ## Scripts
