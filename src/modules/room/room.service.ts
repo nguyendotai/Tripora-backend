@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RoomStatus, UserRole } from '@prisma/client';
+import { PartnerStatus, Prisma, PropertyStatus, RoomStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ActivityLogService } from '../activity/activity-log.service';
 import { AuthenticatedUser } from '../../common/guards/jwt-auth.guard';
@@ -31,7 +31,7 @@ export class RoomService {
   ) {}
 
   async findAllPublic(propertyId: bigint) {
-    await this.getActivePropertyOrThrow(propertyId);
+    await this.getPublicPropertyOrThrow(propertyId);
 
     return this.prisma.room.findMany({
       where: { propertyId, status: RoomStatus.ACTIVE, deletedAt: null },
@@ -52,7 +52,16 @@ export class RoomService {
 
   async findOnePublic(id: bigint) {
     const room = await this.prisma.room.findFirst({
-      where: { id, status: RoomStatus.ACTIVE, deletedAt: null },
+      where: {
+        id,
+        status: RoomStatus.ACTIVE,
+        deletedAt: null,
+        property: {
+          status: PropertyStatus.ACTIVE,
+          deletedAt: null,
+          partner: { status: PartnerStatus.ACTIVE },
+        },
+      },
       select: ROOM_SELECT,
     });
 
@@ -134,9 +143,29 @@ export class RoomService {
     return room;
   }
 
+  /** Dùng cho thao tác của chủ sở hữu (Partner/Admin) — Property PENDING_APPROVAL vẫn phải quản lý Room được. */
   private async getActivePropertyOrThrow(propertyId: bigint) {
     const property = await this.prisma.property.findFirst({
       where: { id: propertyId, deletedAt: null },
+      select: { id: true, partnerId: true },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+
+    return property;
+  }
+
+  /** Dùng cho endpoint public — chỉ Property đã ACTIVE và Partner chưa bị SUSPENDED mới lộ Room ra ngoài. */
+  private async getPublicPropertyOrThrow(propertyId: bigint) {
+    const property = await this.prisma.property.findFirst({
+      where: {
+        id: propertyId,
+        status: PropertyStatus.ACTIVE,
+        deletedAt: null,
+        partner: { status: PartnerStatus.ACTIVE },
+      },
       select: { id: true, partnerId: true },
     });
 

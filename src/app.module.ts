@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { DestinationModule } from './modules/destination/destination.module';
+import { PartnerModule } from './modules/partner/partner.module';
 import { PropertyModule } from './modules/property/property.module';
 import { RoomModule } from './modules/room/room.module';
 import { RoomAvailabilityModule } from './modules/room-availability/room-availability.module';
@@ -18,11 +20,13 @@ import { RefundModule } from './modules/refund/refund.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     ActivityModule,
     AuthModule,
     UserModule,
     DestinationModule,
+    PartnerModule,
     PropertyModule,
     RoomModule,
     RoomAvailabilityModule,

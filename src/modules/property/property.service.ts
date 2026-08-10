@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PropertyStatus, UserRole } from '@prisma/client';
+import { PartnerStatus, Prisma, PropertyStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ActivityLogService } from '../activity/activity-log.service';
 import { paginate } from '../../shared/utils/pagination';
@@ -53,6 +53,7 @@ export class PropertyService {
     const where: Prisma.PropertyWhereInput = {
       status: PropertyStatus.ACTIVE,
       deletedAt: null,
+      partner: { status: PartnerStatus.ACTIVE },
       ...(query.q ? { name: { contains: query.q } } : {}),
       ...(query.destinationId ? { destinationId: BigInt(query.destinationId) } : {}),
       ...(query.type ? { type: query.type } : {}),
@@ -74,7 +75,12 @@ export class PropertyService {
 
   async findOnePublic(id: bigint) {
     const property = await this.prisma.property.findFirst({
-      where: { id, status: PropertyStatus.ACTIVE, deletedAt: null },
+      where: {
+        id,
+        status: PropertyStatus.ACTIVE,
+        deletedAt: null,
+        partner: { status: PartnerStatus.ACTIVE },
+      },
       select: PROPERTY_SELECT,
     });
 

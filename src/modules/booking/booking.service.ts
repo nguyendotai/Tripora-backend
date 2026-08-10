@@ -178,7 +178,10 @@ export class BookingService {
   async findMine(user: AuthenticatedUser, query: ListBookingsDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const where: Prisma.BookingWhereInput = { userId: BigInt(user.id) };
+    const where: Prisma.BookingWhereInput = {
+      userId: BigInt(user.id),
+      ...(query.status ? { status: query.status } : {}),
+    };
 
     const [items, totalItems] = await Promise.all([
       this.prisma.booking.findMany({
@@ -205,7 +208,29 @@ export class BookingService {
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const where: Prisma.BookingWhereInput = { partnerId: partner.id };
+    const where: Prisma.BookingWhereInput = {
+      partnerId: partner.id,
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [items, totalItems] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        select: BOOKING_SELECT,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.booking.count({ where }),
+    ]);
+
+    return paginate(items, page, limit, totalItems);
+  }
+
+  async findAllForAdmin(query: ListBookingsDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.BookingWhereInput = query.status ? { status: query.status } : {};
 
     const [items, totalItems] = await Promise.all([
       this.prisma.booking.findMany({
@@ -312,6 +337,70 @@ export class BookingService {
     });
 
     return this.prisma.booking.findUnique({ where: { id }, select: BOOKING_SELECT });
+  }
+
+  /**
+   * Tự động hủy Booking giữ chỗ quá hạn chưa thanh toán (booking.md mục 3: "giữ PENDING/PAYMENT_PENDING
+   * quá thời gian giữ chỗ phải tự động hủy + hoàn tồn kho"). Gọi định kỳ từ BookingSchedulerService.
+   * Không cần tạo Refund (luôn UNPAID ở nhánh này — đã CONFIRMED/PAID thì không còn PENDING/PAYMENT_PENDING).
+   */
+  async cancelExpiredBookings(olderThanMinutes: number): Promise<number> {
+    const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000);
+
+    const expired = await this.prisma.booking.findMany({
+      where: {
+        status: { in: [BookingStatus.PENDING, BookingStatus.PAYMENT_PENDING] },
+        createdAt: { lt: cutoff },
+      },
+      select: {
+        id: true,
+        items: { select: { resourceId: true, date: true, quantity: true } },
+      },
+    });
+
+    let cancelledCount = 0;
+    for (const booking of expired) {
+      const cancelled = await this.prisma.$transaction(async (tx) => {
+        // Claim atomic — chỉ tiếp tục nếu chính lần gọi này thực sự chuyển được trạng thái.
+        // Chống double-process khi cancelExpiredBookings được gọi đồng thời (nhiều instance
+        // Backend cùng chạy Cron, hoặc nhiều job chồng lấn) — nếu không có claim này, 2 lần gọi
+        // cùng đọc thấy status còn PENDING sẽ cùng hoàn tồn kho, cộng dồn sai available.
+        const claim = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            status: { in: [BookingStatus.PENDING, BookingStatus.PAYMENT_PENDING] },
+          },
+          data: { status: BookingStatus.CANCELLED },
+        });
+        if (claim.count === 0) {
+          return false;
+        }
+
+        for (const item of booking.items) {
+          if (item.date) {
+            await this.roomAvailability.incrementAvailability(
+              tx,
+              item.resourceId,
+              item.date,
+              item.quantity,
+            );
+          }
+        }
+        return true;
+      });
+
+      if (cancelled) {
+        cancelledCount += 1;
+        await this.activityLog.log({
+          action: 'booking.cancelled',
+          resourceType: 'BOOKING',
+          resourceId: booking.id,
+          metadata: { reason: 'expired_hold' },
+        });
+      }
+    }
+
+    return cancelledCount;
   }
 
   private resolveRefundPercent(usageDate: Date | null): number {

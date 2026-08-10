@@ -35,6 +35,12 @@ export class BookingController {
     return this.bookingService.findForPartner(user, query);
   }
 
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Get()
+  findAllForAdmin(@Query() query: ListBookingsDto) {
+    return this.bookingService.findAllForAdmin(query);
+  }
+
   @Roles(UserRole.TRAVELER, UserRole.PARTNER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
