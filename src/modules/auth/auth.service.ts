@@ -40,8 +40,10 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user || !user.passwordHash) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email, deletedAt: null },
+    });
+    if (!user || !user.passwordHash || user.status !== 'ACTIVE') {
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -68,7 +70,13 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: stored.userId } });
+    const user = await this.prisma.user.findFirst({
+      where: { id: stored.userId, deletedAt: null },
+    });
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
     return this.buildAuthResult(user.id, user.email, user.role);
   }
 
