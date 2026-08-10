@@ -173,6 +173,7 @@ model User {
   reviews        Review[]
   notifications  Notification[]
   payments       Payment[]
+  activityLogs   ActivityLog[]
 
   @@map("users")
 }
@@ -504,4 +505,24 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+// ============ ACTIVITY LOG (specs/activity-log.md) — append-only audit, không có API sửa/xóa ============
+
+model ActivityLog {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  actorId      BigInt?  @map("actor_id") @db.UnsignedBigInt
+  action       String   @db.VarChar(100)
+  resourceType String   @map("resource_type") @db.VarChar(50)
+  // resourceId là tham chiếu mềm (không FK cứng) vì resourceType đổi mục tiêu theo action
+  resourceId   BigInt?  @map("resource_id") @db.UnsignedBigInt
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
