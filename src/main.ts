@@ -7,6 +7,13 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
+// Prisma trả id/BigInt cho các cột UnsignedBigInt — JSON.stringify (Express res.json)
+// không tự serialize được BigInt, nên phải patch toJSON() một lần ở đây cho toàn bộ app.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
