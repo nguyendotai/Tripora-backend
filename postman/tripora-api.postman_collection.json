@@ -18,7 +18,9 @@
     { "key": "roomAvailabilityId", "value": "" },
     { "key": "bookingId", "value": "" },
     { "key": "webhookTransactionId", "value": "" },
-    { "key": "refundId", "value": "" }
+    { "key": "refundId", "value": "" },
+    { "key": "newPartnerTravelerToken", "value": "" },
+    { "key": "newPartnerId", "value": "" }
   ],
   "item": [
     {
@@ -677,6 +679,17 @@
             "description": "403 nếu chưa có hồ sơ Partner."
           },
           "response": []
+        },
+        {
+          "name": "List All Bookings (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminAccessToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/bookings?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["bookings"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }, { "key": "status", "value": "CONFIRMED", "disabled": true }] },
+            "description": "403 nếu không phải Admin/Super Admin. Có thể lọc theo status (bật query param status)."
+          },
+          "response": []
         }
       ]
     },
@@ -762,6 +775,102 @@
             "body": { "mode": "raw", "raw": "{\n  \"status\": \"COMPLETED\"\n}" },
             "url": { "raw": "{{baseUrl}}/refunds/{{refundId}}/complete", "host": ["{{baseUrl}}"], "path": ["refunds", "{{refundId}}", "complete"] },
             "description": "Placeholder thay cho Webhook Gateway hoàn tiền thật. 400 nếu Refund không ở trạng thái PROCESSING. COMPLETED -> Booking.paymentStatus = REFUNDED."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Partner",
+      "item": [
+        {
+          "name": "Register New Traveler (for Partner signup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data && json.data.accessToken) {",
+                  "  pm.collectionVariables.set('newPartnerTravelerToken', json.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"Passw0rd!\",\n  \"firstName\": \"Partner\",\n  \"lastName\": \"Applicant\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "description": "Đăng ký riêng 1 Traveler mới cho luồng test Partner (tách khỏi travelerAccessToken dùng cho Booking, tránh 1 User vừa đặt phòng vừa đăng ký Partner gây khó hiểu khi đọc lại collection)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Partner Profile (Traveler)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('newPartnerId', json.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{newPartnerTravelerToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Postman Test Hotel Co\",\n  \"businessType\": \"HOTEL\",\n  \"contactPhone\": \"0900000000\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/partners", "host": ["{{baseUrl}}"], "path": ["partners"] },
+            "description": "409 nếu User này đã có hồ sơ Partner. Tạo ở verificationStatus PENDING. Lưu id vào newPartnerId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Partner Profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{newPartnerTravelerToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/partners/me", "host": ["{{baseUrl}}"], "path": ["partners", "me"] },
+            "description": "404 nếu chưa có hồ sơ Partner."
+          },
+          "response": []
+        },
+        {
+          "name": "List Pending Partners (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminAccessToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/partners/pending", "host": ["{{baseUrl}}"], "path": ["partners", "pending"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Partner (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminAccessToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/partners/{{newPartnerId}}/verify", "host": ["{{baseUrl}}"], "path": ["partners", "{{newPartnerId}}", "verify"] },
+            "description": "400 nếu không ở trạng thái PENDING. Đồng thời nâng User.role của chủ hồ sơ lên PARTNER."
           },
           "response": []
         }
