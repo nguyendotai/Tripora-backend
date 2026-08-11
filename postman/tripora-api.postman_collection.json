@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile + Destination). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile + Destination + Travel Guide). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -246,6 +246,100 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Yêu cầu role ADMIN. Soft delete (204 No Content)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Travel Guide",
+      "item": [
+        {
+          "name": "List Travel Guides",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/travel-guides?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["travel-guides"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Public. Filter bang q (contains title). Tra { items, pagination }."
+          }
+        },
+        {
+          "name": "Get Travel Guide by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/travel-guides/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["travel-guides", ":slug"],
+              "variable": [{ "key": "slug", "value": "an-gi-o-da-nang" }]
+            },
+            "description": "Public. 404 neu khong ton tai/da xoa."
+          }
+        },
+        {
+          "name": "Create Travel Guide",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"An gi o Da Nang\",\n  \"excerpt\": \"Danh sach mon ngon khong the bo lo.\",\n  \"content\": \"Noi dung day du cua bai cam nang...\",\n  \"coverImage\": \"https://picsum.photos/seed/tripora-guide-danang/800/500\",\n  \"destinationId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/travel-guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["travel-guides"]
+            },
+            "description": "Yeu cau role ADMIN. `slug` tu sinh + dedup tu `title`. `destinationId` khong bat buoc, 400 neu Destination khong ton tai."
+          }
+        },
+        {
+          "name": "Update Travel Guide",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"excerpt\": \"Cap nhat mo ta ngan.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/travel-guides/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["travel-guides", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Delete Travel Guide",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/travel-guides/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["travel-guides", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. Soft delete (204 No Content)."
           }
         }
       ]

@@ -59,6 +59,26 @@ model Destination {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
+  travelGuides TravelGuide[]
+
   @@index([country])
   @@map("destinations")
+}
+
+model TravelGuide {
+  id            BigInt    @id @default(autoincrement())
+  title         String
+  slug          String    @unique
+  excerpt       String?
+  content       String    @db.Text
+  coverImage    String?   @map("cover_image")
+  destinationId BigInt?   @map("destination_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  destination Destination? @relation(fields: [destinationId], references: [id])
+
+  @@index([destinationId])
+  @@map("travel_guides")
 }
