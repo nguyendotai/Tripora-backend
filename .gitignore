@@ -3,5 +3,9 @@
 /.env
 npm-debug.log*
 *.log
+*.tsbuildinfo
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
 coverage/
