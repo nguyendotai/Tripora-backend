@@ -17,7 +17,10 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
-  app.enableCors({ credentials: true });
+  app.enableCors({
+    origin: ['http://localhost:3002', 'http://localhost:3003'],
+    credentials: true,
+  });
 
   const config = new DocumentBuilder()
     .setTitle('Tripora API')
