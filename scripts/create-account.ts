@@ -1,40 +1,32 @@
 /**
  * Create a User/Admin account directly in the database.
  *
- * Usage:
- *   npm run account:create -- --email=admin@tripora.dev --password=Admin123 --role=ADMIN --firstName=Admin --lastName=Tripora
- *
- * Flags:
- *   --email       required
- *   --password    required, min 6 characters
- *   --role        USER | ADMIN (default: USER)
- *   --firstName   optional
- *   --lastName    optional
+ * Cách dùng: sửa các giá trị trong khối CONFIG bên dưới rồi chạy:
+ *   npm run account:create
  */
 import 'dotenv/config';
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { parseArgs } from './utils/parse-args';
+
+// ==================== CONFIG — sửa thông tin ở đây ====================
+const email = 'admin@tripora.dev';
+const password = 'Admin123'; // tối thiểu 6 ký tự
+const role: Role = Role.ADMIN; // Role.USER hoặc Role.ADMIN
+const firstName: string | undefined = 'Admin';
+const lastName: string | undefined = 'Tripora';
+// ========================================================================
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
-
-  const email = typeof args.email === 'string' ? args.email.trim() : '';
-  const password = typeof args.password === 'string' ? args.password : '';
-  const role = (typeof args.role === 'string' ? args.role : 'USER').toUpperCase();
-  const firstName = typeof args.firstName === 'string' ? args.firstName : undefined;
-  const lastName = typeof args.lastName === 'string' ? args.lastName : undefined;
-
   if (!email || !EMAIL_REGEX.test(email)) {
-    throw new Error('--email is required and must be a valid email address');
+    throw new Error('email không hợp lệ — sửa biến `email` trong file này');
   }
   if (!password || password.length < 6) {
-    throw new Error('--password is required and must be at least 6 characters');
+    throw new Error('password phải tối thiểu 6 ký tự — sửa biến `password` trong file này');
   }
-  if (!Object.values(Role).includes(role as Role)) {
-    throw new Error(`--role must be one of: ${Object.values(Role).join(', ')}`);
+  if (!Object.values(Role).includes(role)) {
+    throw new Error(`role phải là một trong: ${Object.values(Role).join(', ')}`);
   }
 
   const prisma = new PrismaClient();
@@ -42,21 +34,15 @@ async function main() {
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      throw new Error(`Email already registered: ${email} (id=${existing.id})`);
+      throw new Error(`Email đã tồn tại: ${email} (id=${existing.id})`);
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        role: role as Role,
-        firstName,
-        lastName,
-      },
+      data: { email, passwordHash, role, firstName, lastName },
     });
 
-    console.log('Account created:');
+    console.log('Đã tạo tài khoản:');
     console.log({
       id: user.id.toString(),
       email: user.email,
@@ -69,6 +55,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Failed to create account:', error.message ?? error);
+  console.error('Tạo tài khoản thất bại:', error.message ?? error);
   process.exit(1);
 });
