@@ -9,7 +9,7 @@ import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // ==================== CONFIG — sửa thông tin ở đây ====================
-const email = 'admin@tripora.dev';
+const email = 'admin@tripora.com';
 const password = 'Admin123'; // tối thiểu 6 ký tự
 const role: Role = Role.ADMIN; // Role.USER hoặc Role.ADMIN
 const firstName: string | undefined = 'Admin';
