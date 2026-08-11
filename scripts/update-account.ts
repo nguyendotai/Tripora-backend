@@ -1,86 +1,76 @@
 /**
  * Update an existing account — change role, status, password, or name.
  *
- * Usage:
- *   npm run account:update -- --email=user@tripora.dev --role=ADMIN
- *   npm run account:update -- --email=user@tripora.dev --status=BANNED
- *   npm run account:update -- --email=user@tripora.dev --password=NewPass123
+ * Cách dùng: sửa `email` (tài khoản cần sửa) và các giá trị trong `updates`
+ * bên dưới rồi chạy:
+ *   npm run account:update
  *
- * Flags:
- *   --email or --id   required, identifies the account
- *   --role            USER | ADMIN
- *   --status          ACTIVE | INACTIVE | BANNED
- *   --password        new password (min 6 characters) — hashed before saving
- *   --firstName
- *   --lastName
- *
- * Only flags you pass are updated; everything else stays the same.
+ * Chỉ field nào khác `undefined` trong `updates` mới được cập nhật.
  */
 import 'dotenv/config';
 import { PrismaClient, Role, UserStatus, type Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { parseArgs } from './utils/parse-args';
+
+// ==================== CONFIG — sửa thông tin ở đây ====================
+const email = 'user@tripora.dev'; // tài khoản cần sửa
+
+const updates = {
+  role: undefined as Role | undefined, // ví dụ: Role.ADMIN
+  status: undefined as UserStatus | undefined, // ví dụ: UserStatus.BANNED
+  password: undefined as string | undefined, // mật khẩu mới, tối thiểu 6 ký tự
+  firstName: undefined as string | undefined,
+  lastName: undefined as string | undefined,
+};
+// ========================================================================
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
-
-  const email = typeof args.email === 'string' ? args.email.trim() : undefined;
-  const id = typeof args.id === 'string' ? args.id.trim() : undefined;
-
-  if (!email && !id) {
-    throw new Error('Provide --email=<email> or --id=<id> to identify the account');
+  if (!email) {
+    throw new Error('Sửa biến `email` trong file này để chỉ định tài khoản cần sửa');
   }
 
   const data: Prisma.UserUpdateInput = {};
 
-  if (typeof args.role === 'string') {
-    const role = args.role.toUpperCase();
-    if (!Object.values(Role).includes(role as Role)) {
-      throw new Error(`--role must be one of: ${Object.values(Role).join(', ')}`);
+  if (updates.role !== undefined) {
+    if (!Object.values(Role).includes(updates.role)) {
+      throw new Error(`role phải là một trong: ${Object.values(Role).join(', ')}`);
     }
-    data.role = role as Role;
+    data.role = updates.role;
   }
 
-  if (typeof args.status === 'string') {
-    const status = args.status.toUpperCase();
-    if (!Object.values(UserStatus).includes(status as UserStatus)) {
-      throw new Error(`--status must be one of: ${Object.values(UserStatus).join(', ')}`);
+  if (updates.status !== undefined) {
+    if (!Object.values(UserStatus).includes(updates.status)) {
+      throw new Error(`status phải là một trong: ${Object.values(UserStatus).join(', ')}`);
     }
-    data.status = status as UserStatus;
+    data.status = updates.status;
   }
 
-  if (typeof args.password === 'string') {
-    if (args.password.length < 6) {
-      throw new Error('--password must be at least 6 characters');
+  if (updates.password !== undefined) {
+    if (updates.password.length < 6) {
+      throw new Error('password phải tối thiểu 6 ký tự');
     }
-    data.passwordHash = await bcrypt.hash(args.password, 10);
+    data.passwordHash = await bcrypt.hash(updates.password, 10);
   }
 
-  if (typeof args.firstName === 'string') {
-    data.firstName = args.firstName;
-  }
-  if (typeof args.lastName === 'string') {
-    data.lastName = args.lastName;
-  }
+  if (updates.firstName !== undefined) data.firstName = updates.firstName;
+  if (updates.lastName !== undefined) data.lastName = updates.lastName;
 
   if (Object.keys(data).length === 0) {
     throw new Error(
-      'Nothing to update — pass at least one of --role/--status/--password/--firstName/--lastName',
+      'Chưa có gì để cập nhật — sửa ít nhất 1 field trong `updates` (role/status/password/firstName/lastName)',
     );
   }
 
   const prisma = new PrismaClient();
 
   try {
-    const where = id ? { id: BigInt(id) } : { email };
-    const existing = await prisma.user.findUnique({ where });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (!existing) {
-      throw new Error(`Account not found: ${email ?? `id=${id}`}`);
+      throw new Error(`Không tìm thấy tài khoản: ${email}`);
     }
 
-    const user = await prisma.user.update({ where, data });
+    const user = await prisma.user.update({ where: { email }, data });
 
-    console.log('Account updated:');
+    console.log('Đã cập nhật tài khoản:');
     console.log({
       id: user.id.toString(),
       email: user.email,
@@ -95,6 +85,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Failed to update account:', error.message ?? error);
+  console.error('Cập nhật tài khoản thất bại:', error.message ?? error);
   process.exit(1);
 });

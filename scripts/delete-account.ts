@@ -1,45 +1,41 @@
 /**
- * Delete an account. Soft delete by default (sets deleted_at, matches
- * the soft-delete convention used across the app); pass --hard to
- * permanently remove the row (also deletes its refresh tokens first).
+ * Delete an account. Soft delete by default (sets deleted_at, đúng quy
+ * ước soft-delete dùng chung toàn hệ thống); đặt `hardDelete = true` để
+ * xoá vĩnh viễn (xoá luôn refresh token liên quan trước).
  *
- * Usage:
- *   npm run account:delete -- --email=user@tripora.dev
- *   npm run account:delete -- --email=user@tripora.dev --hard
+ * Cách dùng: sửa `email` và `hardDelete` bên dưới rồi chạy:
+ *   npm run account:delete
  */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { parseArgs } from './utils/parse-args';
+
+// ==================== CONFIG — sửa thông tin ở đây ====================
+const email = 'user@tripora.dev'; // tài khoản cần xoá
+const hardDelete = false; // true = xoá vĩnh viễn, không khôi phục được
+// ========================================================================
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
-
-  const email = typeof args.email === 'string' ? args.email.trim() : undefined;
-  const id = typeof args.id === 'string' ? args.id.trim() : undefined;
-  const hard = args.hard === true;
-
-  if (!email && !id) {
-    throw new Error('Provide --email=<email> or --id=<id> to identify the account');
+  if (!email) {
+    throw new Error('Sửa biến `email` trong file này để chỉ định tài khoản cần xoá');
   }
 
   const prisma = new PrismaClient();
 
   try {
-    const where = id ? { id: BigInt(id) } : { email };
-    const existing = await prisma.user.findUnique({ where });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (!existing) {
-      throw new Error(`Account not found: ${email ?? `id=${id}`}`);
+      throw new Error(`Không tìm thấy tài khoản: ${email}`);
     }
 
-    if (!hard && existing.deletedAt) {
-      console.log(`Account already soft-deleted at ${existing.deletedAt.toISOString()}.`);
+    if (!hardDelete && existing.deletedAt) {
+      console.log(`Tài khoản đã bị soft-delete từ trước (lúc ${existing.deletedAt.toISOString()}).`);
       return;
     }
 
-    if (hard) {
+    if (hardDelete) {
       await prisma.refreshToken.deleteMany({ where: { userId: existing.id } });
       await prisma.user.delete({ where: { id: existing.id } });
-      console.log(`Account permanently deleted: ${existing.email} (id=${existing.id})`);
+      console.log(`Đã xoá vĩnh viễn tài khoản: ${existing.email} (id=${existing.id})`);
     } else {
       await prisma.refreshToken.updateMany({
         where: { userId: existing.id, revokedAt: null },
@@ -49,7 +45,7 @@ async function main() {
         where: { id: existing.id },
         data: { deletedAt: new Date() },
       });
-      console.log(`Account soft-deleted: ${user.email} (id=${user.id})`);
+      console.log(`Đã soft-delete tài khoản: ${user.email} (id=${user.id})`);
     }
   } finally {
     await prisma.$disconnect();
@@ -57,6 +53,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Failed to delete account:', error.message ?? error);
+  console.error('Xoá tài khoản thất bại:', error.message ?? error);
   process.exit(1);
 });

@@ -23,23 +23,22 @@ API mặc định chạy tại `http://localhost:5550/api/v1`, Swagger docs tạ
 Import cả 2 file trong `postman/` vào Postman: `tripora-api.postman_collection.json` (nhóm theo module: Auth, User, Destination) và `tripora-api.postman_environment.json` (biến `baseUrl`). Chọn environment **Tripora Local** trước khi chạy. Chạy `Auth > Register` hoặc `Login` trước — Test script tự lưu `accessToken` vào biến collection để các request sau dùng lại.
 
 ## Account Scripts (tạo/sửa/xoá tài khoản theo role)
-Chưa có UI đăng ký Admin (API `register` luôn tạo role `USER`) nên dùng 3 script dưới đây để thao tác trực tiếp trên DB — hữu ích để tạo tài khoản ADMIN đầu tiên hoặc quản lý tài khoản khi cần.
+Chưa có UI đăng ký Admin (API `register` luôn tạo role `USER`) nên dùng 3 script dưới đây để thao tác trực tiếp trên DB — hữu ích để tạo tài khoản ADMIN đầu tiên hoặc quản lý tài khoản khi cần. **Cách dùng: mở file, sửa giá trị trong khối CONFIG ở đầu file, lưu lại, rồi chạy lệnh — không cần truyền tham số dòng lệnh.**
 
 ```bash
-# Tạo tài khoản mới
-npm run account:create -- --email=admin@tripora.dev --password=Admin123 --role=ADMIN --firstName=Admin --lastName=Tripora
+# 1. Mở scripts/create-account.ts, sửa email/password/role/firstName/lastName trong khối CONFIG
+# 2. Chạy:
+npm run account:create
 
-# Sửa tài khoản đã có (chỉ cập nhật flag nào được truyền)
-npm run account:update -- --email=admin@tripora.dev --role=ADMIN
-npm run account:update -- --email=user@tripora.dev --status=BANNED
-npm run account:update -- --email=user@tripora.dev --password=NewPass123
+# Tương tự cho sửa tài khoản (đổi role, status, mật khẩu...) — sửa CONFIG trong scripts/update-account.ts rồi:
+npm run account:update
 
-# Xoá tài khoản (mặc định soft delete — đúng quy ước `deleted_at` toàn hệ thống)
-npm run account:delete -- --email=user@tripora.dev
-npm run account:delete -- --email=user@tripora.dev --hard   # xoá thật, không khôi phục được
+# Xoá tài khoản (mặc định soft delete — đúng quy ước `deleted_at` toàn hệ thống,
+# đặt hardDelete = true trong file để xoá vĩnh viễn) — sửa CONFIG trong scripts/delete-account.ts rồi:
+npm run account:delete
 ```
 
-Chi tiết flag từng script xem comment đầu file trong `scripts/create-account.ts`, `scripts/update-account.ts`, `scripts/delete-account.ts`.
+Chi tiết từng script (comment đầu file) trong `scripts/create-account.ts`, `scripts/update-account.ts`, `scripts/delete-account.ts`.
 
 ## Cấu trúc thư mục
 ```
