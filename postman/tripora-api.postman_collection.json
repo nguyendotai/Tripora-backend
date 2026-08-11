@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile + Destination). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -151,6 +151,101 @@
               "host": ["{{baseUrl}}"],
               "path": ["users", "me"]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Destination",
+      "item": [
+        {
+          "name": "List Destinations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "country", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Public. Filter bằng q (contains name) / country. Trả { items, pagination }."
+          }
+        },
+        {
+          "name": "Get Destination by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinations/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations", ":slug"],
+              "variable": [{ "key": "slug", "value": "da-nang" }]
+            },
+            "description": "Public. 404 nếu không tồn tại/đã xoá."
+          }
+        },
+        {
+          "name": "Create Destination",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Đà Nẵng\",\n  \"country\": \"Việt Nam\",\n  \"description\": \"Thành phố biển miền Trung.\",\n  \"images\": [\"https://picsum.photos/seed/tripora-danang/800/600\"],\n  \"tags\": [\"beach\", \"food\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinations",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations"]
+            },
+            "description": "Yêu cầu role ADMIN. `slug` tự sinh + dedup từ `name`."
+          }
+        },
+        {
+          "name": "Update Destination",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Cập nhật mô tả.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yêu cầu role ADMIN."
+          }
+        },
+        {
+          "name": "Delete Destination",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/destinations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yêu cầu role ADMIN. Soft delete (204 No Content)."
           }
         }
       ]

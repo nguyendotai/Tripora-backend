@@ -46,3 +46,19 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+model Destination {
+  id          BigInt    @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  country     String?
+  description String?   @db.Text
+  images      Json?
+  tags        Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([country])
+  @@map("destinations")
+}
