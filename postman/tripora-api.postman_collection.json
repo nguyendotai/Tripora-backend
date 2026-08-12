@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile + Destination + Travel Guide + Trip Planner + Wishlist + Review). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -703,6 +703,100 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Chu review hoac role ADMIN (kiem duyet) moi duoc xoa. 403 neu khong phai chu so huu va khong phai ADMIN. Soft delete (204 No Content)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blog",
+      "item": [
+        {
+          "name": "List Blog Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/blog-posts?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog-posts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Public. Filter bang q (contains title). Tra { items, pagination }."
+          }
+        },
+        {
+          "name": "Get Blog Post by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/blog-posts/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog-posts", ":slug"],
+              "variable": [{ "key": "slug", "value": "kinh-nghiem-du-lich-da-nang" }]
+            },
+            "description": "Public. 404 neu khong ton tai/da xoa."
+          }
+        },
+        {
+          "name": "Create Blog Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Kinh nghiem du lich Da Nang\",\n  \"excerpt\": \"Nhung dieu can biet truoc khi den Da Nang.\",\n  \"content\": \"Noi dung day du cua bai viet...\",\n  \"coverImage\": \"https://picsum.photos/seed/tripora-blog-danang/800/500\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog-posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog-posts"]
+            },
+            "description": "Yeu cau role ADMIN. `slug` tu sinh + dedup tu `title`."
+          }
+        },
+        {
+          "name": "Update Blog Post",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"excerpt\": \"Cap nhat mo ta ngan.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog-posts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog-posts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Delete Blog Post",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/blog-posts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog-posts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. Soft delete (204 No Content)."
           }
         }
       ]
