@@ -32,6 +32,7 @@ model User {
   refreshTokens RefreshToken[]
   wishlistItems WishlistItem[]
   reviews       Review[]
+  trips         Trip[]
 
   @@map("users")
 }
@@ -64,6 +65,7 @@ model Destination {
   travelGuides  TravelGuide[]
   wishlistItems WishlistItem[]
   reviews       Review[]
+  tripItems     TripItem[]
 
   @@index([country])
   @@map("destinations")
@@ -117,4 +119,53 @@ model Review {
   @@unique([userId, destinationId])
   @@index([destinationId])
   @@map("reviews")
+}
+
+model Trip {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  title     String
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user User      @relation(fields: [userId], references: [id])
+  days TripDay[]
+
+  @@index([userId])
+  @@map("trips")
+}
+
+model TripDay {
+  id        BigInt    @id @default(autoincrement())
+  tripId    BigInt    @map("trip_id")
+  dayNumber Int       @map("day_number")
+  date      DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  trip  Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  items TripItem[]
+
+  @@unique([tripId, dayNumber])
+  @@map("trip_days")
+}
+
+model TripItem {
+  id            BigInt   @id @default(autoincrement())
+  tripDayId     BigInt   @map("trip_day_id")
+  destinationId BigInt?  @map("destination_id")
+  title         String
+  note          String?  @db.Text
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tripDay     TripDay      @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+  destination Destination? @relation(fields: [destinationId], references: [id])
+
+  @@index([tripDayId])
+  @@map("trip_items")
 }
