@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
+import { NotificationService } from '../notification/notification.service';
 import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListReviewsDto } from './dto/list-reviews.dto';
@@ -18,6 +19,7 @@ export class ReviewService {
   constructor(
     private readonly reviewRepository: ReviewRepository,
     private readonly destinationRepository: DestinationRepository,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async list(query: ListReviewsDto) {
@@ -79,6 +81,15 @@ export class ReviewService {
       throw new ForbiddenException('You do not own this review');
     }
     await this.reviewRepository.softDelete(review.id);
+
+    const isModeration = review.userId !== userId && role === Role.ADMIN;
+    if (isModeration) {
+      await this.notificationService.notify(
+        review.userId,
+        'Đánh giá của bạn đã bị gỡ',
+        'Một đánh giá bạn viết đã bị quản trị viên gỡ bỏ do vi phạm quy định cộng đồng.',
+      );
+    }
   }
 
   private async getOwned(userId: bigint, reviewId: bigint) {

@@ -33,6 +33,7 @@ model User {
   wishlistItems WishlistItem[]
   reviews       Review[]
   trips         Trip[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -182,4 +183,18 @@ model BlogPost {
   deletedAt   DateTime? @map("deleted_at")
 
   @@map("blog_posts")
+}
+
+model Notification {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("notifications")
 }
