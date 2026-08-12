@@ -5,6 +5,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DestinationModule } from './modules/destination/destination.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { UserModule } from './modules/user/user.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { ReviewModule } from './modules/review/review.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { UserModule } from './modules/user/user.module';
     UserModule,
     DestinationModule,
     TravelGuideModule,
+    WishlistModule,
+    ReviewModule,
   ],
   controllers: [],
   providers: [],
