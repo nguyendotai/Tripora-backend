@@ -169,3 +169,17 @@ model TripItem {
   @@index([tripDayId])
   @@map("trip_items")
 }
+
+model BlogPost {
+  id          BigInt    @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  excerpt     String?
+  content     String    @db.Text
+  coverImage  String?   @map("cover_image")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("blog_posts")
+}
