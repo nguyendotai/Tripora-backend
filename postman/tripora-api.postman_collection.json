@@ -343,6 +343,233 @@
           }
         }
       ]
+    },
+    {
+      "name": "Trip",
+      "item": [
+        {
+          "name": "Create Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Da Nang 3N2D\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-03\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trips",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips"]
+            },
+            "description": "Yeu cau dang nhap. Chi chu so huu moi xem/sua/xoa duoc Trip cua minh."
+          }
+        },
+        {
+          "name": "List My Trips",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trip Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Tra ve Trip kem days + items (sap theo sortOrder) + destination lien ket."
+          }
+        },
+        {
+          "name": "Update Trip",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Da Nang 4N3D\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trips/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Trip",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Soft delete (204 No Content)."
+          }
+        },
+        {
+          "name": "Add Trip Day",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trips/:tripId/days",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":tripId", "days"],
+              "variable": [{ "key": "tripId", "value": "1" }]
+            },
+            "description": "dayNumber tu tang (1, 2, 3...)."
+          }
+        },
+        {
+          "name": "Delete Trip Day",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/:tripId/days/:dayId",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":tripId", "days", ":dayId"],
+              "variable": [
+                { "key": "tripId", "value": "1" },
+                { "key": "dayId", "value": "1" }
+              ]
+            },
+            "description": "Xoa Day se xoa luon Items ben trong (cascade)."
+          }
+        },
+        {
+          "name": "Add Trip Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"An sang o quan Mon Ngon\",\n  \"note\": \"Gia khoang 30k\",\n  \"destinationId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trips/:tripId/days/:dayId/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":tripId", "days", ":dayId", "items"],
+              "variable": [
+                { "key": "tripId", "value": "1" },
+                { "key": "dayId", "value": "1" }
+              ]
+            },
+            "description": "destinationId khong bat buoc. sortOrder tu tang."
+          }
+        },
+        {
+          "name": "Update Trip Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Cap nhat ghi chu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trips/:tripId/days/:dayId/items/:itemId",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":tripId", "days", ":dayId", "items", ":itemId"],
+              "variable": [
+                { "key": "tripId", "value": "1" },
+                { "key": "dayId", "value": "1" },
+                { "key": "itemId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reorder Trip Items",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemIds\": [\"2\", \"1\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trips/:tripId/days/:dayId/items/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":tripId", "days", ":dayId", "items", "reorder"],
+              "variable": [
+                { "key": "tripId", "value": "1" },
+                { "key": "dayId", "value": "1" }
+              ]
+            },
+            "description": "itemIds theo dung thu tu moi mong muon. Ghi de lai sortOrder tu 1..n."
+          }
+        },
+        {
+          "name": "Delete Trip Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/:tripId/days/:dayId/items/:itemId",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", ":tripId", "days", ":dayId", "items", ":itemId"],
+              "variable": [
+                { "key": "tripId", "value": "1" },
+                { "key": "dayId", "value": "1" },
+                { "key": "itemId", "value": "1" }
+              ]
+            },
+            "description": "204 No Content."
+          }
+        }
+      ]
     }
   ]
 }
