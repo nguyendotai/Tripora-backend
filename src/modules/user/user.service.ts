@@ -1,14 +1,24 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, UserStatus } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
 import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 import { UserRepository } from './user.repository';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ListUsersDto } from './dto/list-users.dto';
 import { sanitizeUser } from './user.mapper';
 
+const STATUS_LABELS: Record<UserStatus, string> = {
+  ACTIVE: 'hoạt động',
+  INACTIVE: 'ngừng hoạt động',
+  BANNED: 'bị cấm',
+};
+
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async getById(id: bigint) {
     const user = await this.userRepository.findById(id);
@@ -45,6 +55,14 @@ export class UserService {
       throw new BadRequestException('You cannot change your own status');
     }
     await this.getById(targetId);
-    return this.userRepository.updateStatus(targetId, status);
+    const user = await this.userRepository.updateStatus(targetId, status);
+
+    await this.notificationService.notify(
+      targetId,
+      'Trạng thái tài khoản đã thay đổi',
+      `Tài khoản của bạn hiện đang ${STATUS_LABELS[status]}.`,
+    );
+
+    return user;
   }
 }
