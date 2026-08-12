@@ -1,6 +1,12 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UserRepository } from '../user/user.repository';
@@ -48,6 +54,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    this.ensureActive(user.status);
+
     const tokens = await this.issueTokens(user.id, user.email, user.role);
     return { ...tokens, user };
   }
@@ -72,6 +80,11 @@ export class AuthService {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+
+    if (user.status !== UserStatus.ACTIVE) {
+      await this.authRepository.revoke(stored.id);
+      throw new UnauthorizedException('Account is no longer active');
     }
 
     await this.authRepository.revoke(stored.id);
@@ -105,5 +118,15 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private ensureActive(status: UserStatus) {
+    if (status !== UserStatus.ACTIVE) {
+      throw new ForbiddenException(
+        status === UserStatus.BANNED
+          ? 'This account has been banned'
+          : 'This account is inactive',
+      );
+    }
   }
 }
