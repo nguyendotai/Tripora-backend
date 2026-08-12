@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, UserStatus } from '@prisma/client';
+import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 import { UserRepository } from './user.repository';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ListUsersDto } from './dto/list-users.dto';
+import { sanitizeUser } from './user.mapper';
 
 @Injectable()
 export class UserService {
@@ -16,5 +20,31 @@ export class UserService {
 
   async updateProfile(id: bigint, dto: UpdateProfileDto) {
     return this.userRepository.updateProfile(id, dto);
+  }
+
+  async list(query: ListUsersDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      ...(query.q && {
+        OR: [
+          { email: { contains: query.q } },
+          { firstName: { contains: query.q } },
+          { lastName: { contains: query.q } },
+        ],
+      }),
+    };
+
+    const [items, totalItems] = await this.userRepository.findMany(where, skip, take);
+    return buildPaginated(items.map(sanitizeUser), totalItems, page, limit);
+  }
+
+  async updateStatus(targetId: bigint, currentUserId: bigint, status: UserStatus) {
+    if (targetId === currentUserId) {
+      throw new BadRequestException('You cannot change your own status');
+    }
+    await this.getById(targetId);
+    return this.userRepository.updateStatus(targetId, status);
   }
 }

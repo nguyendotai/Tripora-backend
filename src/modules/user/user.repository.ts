@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Prisma, User, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
@@ -28,5 +28,25 @@ export class UserRepository {
     data: { firstName?: string; lastName?: string },
   ): Promise<User> {
     return this.prisma.user.update({ where: { id }, data });
+  }
+
+  async findMany(
+    where: Prisma.UserWhereInput,
+    skip: number,
+    take: number,
+  ): Promise<[User[], number]> {
+    return this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+  }
+
+  updateStatus(id: bigint, status: UserStatus): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data: { status } });
   }
 }
