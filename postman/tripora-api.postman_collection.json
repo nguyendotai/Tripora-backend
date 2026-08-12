@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -893,6 +893,26 @@
               "path": ["notifications", "read-all"]
             },
             "description": "Yeu cau dang nhap. 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Report",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "overview"]
+            },
+            "description": "Yeu cau role ADMIN. Thong ke tong hop: users (theo status), destinations, travelGuides, blogPosts, trips, reviews (tong + diem trung binh), wishlistItems, top 5 Destination duoc wishlist nhieu nhat."
           }
         }
       ]

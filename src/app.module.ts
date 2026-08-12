@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { DestinationModule } from './modules/destination/destination.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { ReportModule } from './modules/report/report.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UserModule } from './modules/user/user.module';
@@ -24,6 +25,7 @@ import { ReviewModule } from './modules/review/review.module';
     ReviewModule,
     BlogModule,
     NotificationModule,
+    ReportModule,
   ],
   controllers: [],
   providers: [],
