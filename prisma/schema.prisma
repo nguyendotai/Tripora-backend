@@ -30,6 +30,8 @@ model User {
   updatedAt     DateTime       @updatedAt @map("updated_at")
   deletedAt     DateTime?      @map("deleted_at")
   refreshTokens RefreshToken[]
+  wishlistItems WishlistItem[]
+  reviews       Review[]
   trips         Trip[]
 
   @@map("users")
@@ -60,8 +62,10 @@ model Destination {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  travelGuides TravelGuide[]
-  tripItems    TripItem[]
+  travelGuides  TravelGuide[]
+  wishlistItems WishlistItem[]
+  reviews       Review[]
+  tripItems     TripItem[]
 
   @@index([country])
   @@map("destinations")
@@ -83,6 +87,38 @@ model TravelGuide {
 
   @@index([destinationId])
   @@map("travel_guides")
+}
+
+model WishlistItem {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  destinationId BigInt   @map("destination_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [userId], references: [id])
+  destination Destination @relation(fields: [destinationId], references: [id])
+
+  @@unique([userId, destinationId])
+  @@index([destinationId])
+  @@map("wishlist_items")
+}
+
+model Review {
+  id            BigInt    @id @default(autoincrement())
+  userId        BigInt    @map("user_id")
+  destinationId BigInt    @map("destination_id")
+  rating        Int
+  content       String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  user        User        @relation(fields: [userId], references: [id])
+  destination Destination @relation(fields: [destinationId], references: [id])
+
+  @@unique([userId, destinationId])
+  @@index([destinationId])
+  @@map("reviews")
 }
 
 model Trip {

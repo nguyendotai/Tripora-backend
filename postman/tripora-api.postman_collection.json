@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile + Destination + Travel Guide). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile + Destination + Travel Guide + Trip Planner + Wishlist + Review). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -567,6 +567,142 @@
               ]
             },
             "description": "204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist",
+      "item": [
+        {
+          "name": "List My Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlist"]
+            },
+            "description": "Yeu cau dang nhap. Tra danh sach WishlistItem cua user hien tai, kem Destination."
+          }
+        },
+        {
+          "name": "Add To Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destinationId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlist"]
+            },
+            "description": "Yeu cau dang nhap. Idempotent — them lai destination da co san se tra ve item cu, khong loi. 400 neu destinationId khong ton tai."
+          }
+        },
+        {
+          "name": "Remove From Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlist/:destinationId",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlist", ":destinationId"],
+              "variable": [{ "key": "destinationId", "value": "1" }]
+            },
+            "description": "Yeu cau dang nhap. 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Review",
+      "item": [
+        {
+          "name": "List Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reviews?destinationId=1&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"],
+              "query": [
+                { "key": "destinationId", "value": "1" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Public. Filter theo destinationId (tuy chon). Tra { items, pagination }, moi item kem thong tin user (id, firstName, lastName)."
+          }
+        },
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destinationId\": \"1\",\n  \"rating\": 5,\n  \"content\": \"Chuyen di tuyet voi!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"]
+            },
+            "description": "Yeu cau dang nhap. rating 1-5. 400 neu destinationId khong ton tai. 409 neu user da review destination nay roi (chua bi xoa)."
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"content\": \"Cap nhat lai danh gia.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu review moi duoc sua. 403 neu khong phai chu so huu."
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chu review hoac role ADMIN (kiem duyet) moi duoc xoa. 403 neu khong phai chu so huu va khong phai ADMIN. Soft delete (204 No Content)."
           }
         }
       ]
