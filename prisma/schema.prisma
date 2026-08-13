@@ -34,6 +34,7 @@ model User {
   reviews       Review[]
   trips         Trip[]
   notifications Notification[]
+  provider      Provider?
 
   @@map("users")
 }
@@ -197,4 +198,37 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+enum ProviderType {
+  HOTEL
+  TOUR
+  ACTIVITY
+  TRANSPORT
+  FLIGHT
+}
+
+enum ProviderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// V2 scope: 1 User -> 1 Provider profile (chưa có Organization/multi-member).
+// Sẽ mở rộng thành Organization ở V7 (xem business-rules Provider Marketplace).
+model Provider {
+  id          BigInt         @id @default(autoincrement())
+  userId      BigInt         @unique @map("user_id")
+  type        ProviderType   @default(HOTEL)
+  name        String
+  description String?        @db.Text
+  logo        String?
+  contact     String?
+  status      ProviderStatus @default(PENDING)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("providers")
 }
