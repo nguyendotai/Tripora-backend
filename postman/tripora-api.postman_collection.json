@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -994,6 +994,154 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon (toi da 500 ky tu), chi co y nghia khi REJECTED — se duoc dua vao noi dung Notification gui cho chu ho so. Tu dong gui Notification ca 2 truong hop."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Property",
+      "item": [
+        {
+          "name": "List Properties (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/properties?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "destinationId", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Public. Chi tra Property da APPROVED. Filter q (contains name) / destinationId."
+          }
+        },
+        {
+          "name": "Get Property by Slug (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/properties/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", ":slug"],
+              "variable": [{ "key": "slug", "value": "khach-san-bien-xanh" }]
+            },
+            "description": "Public. 404 neu khong ton tai hoac chua APPROVED."
+          }
+        },
+        {
+          "name": "List My Properties (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/mine?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", "mine"],
+              "query": [{ "key": "status", "value": "PENDING", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile APPROVED (403 neu khong). Tra toan bo Property cua chinh minh, bat ky status."
+          }
+        },
+        {
+          "name": "List Properties For Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN. Tra Property cua moi Provider, filter theo status."
+          }
+        },
+        {
+          "name": "Create Property",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Khach san Bien Xanh\",\n  \"destinationId\": \"1\",\n  \"description\": \"Khach san 4 sao view bien\",\n  \"address\": \"123 Duong Bien\",\n  \"checkInTime\": \"14:00\",\n  \"checkOutTime\": \"12:00\",\n  \"amenities\": [\"wifi\", \"pool\"],\n  \"images\": [\"https://picsum.photos/seed/hotel1/800/600\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/properties",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile APPROVED (403 neu khong). Trang thai ban dau PENDING, chua hien thi public toi khi Admin duyet. slug tu sinh + dedup tu name."
+          }
+        },
+        {
+          "name": "Update Property",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Cap nhat mo ta\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/properties/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu (Provider) moi duoc sua. 403 neu khong phai chu so huu."
+          }
+        },
+        {
+          "name": "Delete Property",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu moi duoc xoa. Soft delete (204 No Content)."
+          }
+        },
+        {
+          "name": "Review Property (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/properties/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon, dua vao Notification gui cho chu so huu."
           }
         }
       ]
