@@ -9,6 +9,7 @@ import { ProviderModule } from './modules/provider/provider.module';
 import { PropertyModule } from './modules/property/property.module';
 import { ReportModule } from './modules/report/report.module';
 import { RoomModule } from './modules/room/room.module';
+import { RoomInventoryModule } from './modules/room-inventory/room-inventory.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UserModule } from './modules/user/user.module';
@@ -32,6 +33,7 @@ import { ReviewModule } from './modules/review/review.module';
     ProviderModule,
     PropertyModule,
     RoomModule,
+    RoomInventoryModule,
   ],
   controllers: [],
   providers: [],
