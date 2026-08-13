@@ -985,7 +985,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+              "raw": "{\n  \"status\": \"REJECTED\",\n  \"reason\": \"Thieu giay phep kinh doanh hop le\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/providers/:id/review",
@@ -993,7 +993,7 @@
               "path": ["providers", ":id", "review"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. Tu dong gui Notification cho chu ho so."
+            "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon (toi da 500 ky tu), chi co y nghia khi REJECTED — se duoc dua vao noi dung Notification gui cho chu ho so. Tu dong gui Notification ca 2 truong hop."
           }
         }
       ]

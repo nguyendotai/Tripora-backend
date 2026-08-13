@@ -39,6 +39,6 @@ export class ProviderController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   review(@Param('id') id: string, @Body() dto: ReviewProviderDto) {
-    return this.providerService.review(parseIdParam(id), dto.status);
+    return this.providerService.review(parseIdParam(id), dto.status, dto.reason);
   }
 }
