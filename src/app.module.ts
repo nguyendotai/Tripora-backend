@@ -8,6 +8,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { ProviderModule } from './modules/provider/provider.module';
 import { PropertyModule } from './modules/property/property.module';
 import { ReportModule } from './modules/report/report.module';
+import { RoomModule } from './modules/room/room.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UserModule } from './modules/user/user.module';
@@ -30,6 +31,7 @@ import { ReviewModule } from './modules/review/review.module';
     ReportModule,
     ProviderModule,
     PropertyModule,
+    RoomModule,
   ],
   controllers: [],
   providers: [],
