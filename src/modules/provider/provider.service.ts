@@ -47,7 +47,7 @@ export class ProviderService {
     return buildPaginated(items, totalItems, page, limit);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED') {
+  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
     const provider = await this.providerRepository.findById(id);
     if (!provider) {
       throw new NotFoundException('Provider not found');
@@ -58,12 +58,16 @@ export class ProviderService {
       status as ProviderStatus,
     );
 
+    const rejectMessage = reason
+      ? `Hồ sơ đối tác "${provider.name}" của bạn đã bị từ chối. Lý do: ${reason}`
+      : `Hồ sơ đối tác "${provider.name}" của bạn đã bị từ chối. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.`;
+
     await this.notificationService.notify(
       provider.userId,
       status === 'APPROVED' ? 'Hồ sơ đối tác đã được duyệt' : 'Hồ sơ đối tác bị từ chối',
       status === 'APPROVED'
         ? `Hồ sơ đối tác "${provider.name}" của bạn đã được duyệt. Bạn có thể bắt đầu tạo khách sạn.`
-        : `Hồ sơ đối tác "${provider.name}" của bạn đã bị từ chối. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.`,
+        : rejectMessage,
     );
 
     return updated;
