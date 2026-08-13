@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property + Room). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1142,6 +1142,98 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon, dua vao Notification gui cho chu so huu."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Room",
+      "item": [
+        {
+          "name": "List Rooms (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms?propertyId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"],
+              "query": [{ "key": "propertyId", "value": "1" }]
+            },
+            "description": "Public. Chi tra Room status ACTIVE, va chi khi Property da APPROVED (404 neu chua duyet)."
+          }
+        },
+        {
+          "name": "List My Rooms (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/mine?propertyId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "mine"],
+              "query": [{ "key": "propertyId", "value": "1" }]
+            },
+            "description": "Yeu cau dang nhap + so huu Property nay (qua Provider da APPROVED). Tra toan bo Room, bat ky status."
+          }
+        },
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"1\",\n  \"name\": \"Deluxe Room\",\n  \"capacity\": 2,\n  \"beds\": [\"1 giuong doi\"],\n  \"basePrice\": 850000,\n  \"currency\": \"VND\",\n  \"amenities\": [\"wifi\", \"tv\"],\n  \"images\": [\"https://picsum.photos/seed/room1/800/600\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"]
+            },
+            "description": "Yeu cau dang nhap + so huu Property (qua Provider da APPROVED, 403 neu khong). Trang thai mac dinh ACTIVE — hien thi public ngay neu Property da duoc duyet (Room khong can duyet rieng)."
+          }
+        },
+        {
+          "name": "Update Room",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu (qua Property -> Provider) moi duoc sua. Doi status sang INACTIVE de an tam thoi khoi public ma khong can xoa."
+          }
+        },
+        {
+          "name": "Delete Room",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu moi duoc xoa. Soft delete (204 No Content)."
           }
         }
       ]

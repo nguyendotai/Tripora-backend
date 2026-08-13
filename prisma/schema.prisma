@@ -264,8 +264,37 @@ model Property {
 
   provider    Provider     @relation(fields: [providerId], references: [id])
   destination Destination? @relation(fields: [destinationId], references: [id])
+  rooms       Room[]
 
   @@index([providerId])
   @@index([destinationId])
   @@map("properties")
+}
+
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// Loại phòng của 1 Property. Gia/tồn kho theo ngày cụ thể nằm ở RoomInventory (phần sau).
+model Room {
+  id          BigInt     @id @default(autoincrement())
+  propertyId  BigInt     @map("property_id")
+  name        String
+  description String?    @db.Text
+  capacity    Int?
+  beds        Json?
+  basePrice   Decimal    @db.Decimal(10, 2) @map("base_price")
+  currency    String     @default("VND")
+  amenities   Json?
+  images      Json?
+  status      RoomStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@map("property_rooms")
 }
