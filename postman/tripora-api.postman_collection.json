@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -913,6 +913,87 @@
               "path": ["reports", "overview"]
             },
             "description": "Yeu cau role ADMIN. Thong ke tong hop: users (theo status), destinations, travelGuides, blogPosts, trips, reviews (tong + diem trung binh), wishlistItems, top 5 Destination duoc wishlist nhieu nhat."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Provider",
+      "item": [
+        {
+          "name": "Apply As Provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Khach san Bien Xanh\",\n  \"description\": \"Chuyen cung cap phong khach san ven bien\",\n  \"contact\": \"0901234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", "apply"]
+            },
+            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). Type mac dinh HOTEL (V2 chi co Hotel). Trang thai ban dau PENDING."
+          }
+        },
+        {
+          "name": "Get My Provider Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", "me"]
+            },
+            "description": "Yeu cau dang nhap. 404 neu chua tung apply."
+          }
+        },
+        {
+          "name": "List Providers (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers?status=PENDING&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers"],
+              "query": [
+                { "key": "status", "value": "PENDING" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Yeu cau role ADMIN. Filter status tuy chon (PENDING/APPROVED/REJECTED). Moi item kem thong tin user nop ho so."
+          }
+        },
+        {
+          "name": "Review Provider (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. Tu dong gui Notification cho chu ho so."
           }
         }
       ]
