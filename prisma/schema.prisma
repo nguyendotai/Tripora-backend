@@ -68,6 +68,7 @@ model Destination {
   wishlistItems WishlistItem[]
   reviews       Review[]
   tripItems     TripItem[]
+  properties    Property[]
 
   @@index([country])
   @@map("destinations")
@@ -228,7 +229,43 @@ model Provider {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  properties Property[]
 
   @@map("providers")
+}
+
+enum PropertyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// V2 scope: chỉ Hotel (Property = khách sạn của 1 Provider). Room/Inventory ở phần sau.
+model Property {
+  id            BigInt         @id @default(autoincrement())
+  providerId    BigInt         @map("provider_id")
+  destinationId BigInt?        @map("destination_id")
+  name          String
+  slug          String         @unique
+  description   String?        @db.Text
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  images        Json?
+  amenities     Json?
+  checkInTime   String?        @map("check_in_time")
+  checkOutTime  String?        @map("check_out_time")
+  policies      String?        @db.Text
+  status        PropertyStatus @default(PENDING)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+
+  provider    Provider     @relation(fields: [providerId], references: [id])
+  destination Destination? @relation(fields: [destinationId], references: [id])
+
+  @@index([providerId])
+  @@index([destinationId])
+  @@map("properties")
 }

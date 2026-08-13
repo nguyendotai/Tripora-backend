@@ -6,6 +6,7 @@ import { BlogModule } from './modules/blog/blog.module';
 import { DestinationModule } from './modules/destination/destination.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { ProviderModule } from './modules/provider/provider.module';
+import { PropertyModule } from './modules/property/property.module';
 import { ReportModule } from './modules/report/report.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
@@ -28,6 +29,7 @@ import { ReviewModule } from './modules/review/review.module';
     NotificationModule,
     ReportModule,
     ProviderModule,
+    PropertyModule,
   ],
   controllers: [],
   providers: [],
