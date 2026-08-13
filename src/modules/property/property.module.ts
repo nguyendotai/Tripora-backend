@@ -10,5 +10,6 @@ import { PropertyService } from './property.service';
   imports: [DestinationModule, NotificationModule, ProviderModule],
   controllers: [PropertyController],
   providers: [PropertyService, PropertyRepository],
+  exports: [PropertyRepository],
 })
 export class PropertyModule {}
