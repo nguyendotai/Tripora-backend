@@ -293,8 +293,29 @@ model Room {
   updatedAt   DateTime   @updatedAt @map("updated_at")
   deletedAt   DateTime?  @map("deleted_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property  Property        @relation(fields: [propertyId], references: [id])
+  inventory RoomInventory[]
 
   @@index([propertyId])
   @@map("property_rooms")
+}
+
+// Ton kho + gia theo tung ngay cu the cua 1 Room. Booking Engine (phan sau) se
+// tru availableRooms atomic khi tao Booking — chua wire o day, chi CRUD.
+model RoomInventory {
+  id             BigInt   @id @default(autoincrement())
+  roomId         BigInt   @map("room_id")
+  date           DateTime @db.Date
+  totalRooms     Int      @map("total_rooms")
+  availableRooms Int      @map("available_rooms")
+  bookedRooms    Int      @default(0) @map("booked_rooms")
+  price          Decimal? @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@unique([roomId, date])
+  @@index([roomId])
+  @@map("room_inventory")
 }

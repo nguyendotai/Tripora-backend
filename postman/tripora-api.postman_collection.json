@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property + Room). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property + Room + Room Inventory). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1234,6 +1234,69 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Chi chu so huu moi duoc xoa. Soft delete (204 No Content)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Room Inventory",
+      "item": [
+        {
+          "name": "List Inventory (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/room-inventory?roomId=1&startDate=2026-09-01&endDate=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-inventory"],
+              "query": [
+                { "key": "roomId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-05" }
+              ]
+            },
+            "description": "Public. Chi tra ket qua neu Room dang ACTIVE va Property cha da APPROVED (404 neu khong)."
+          }
+        },
+        {
+          "name": "List My Inventory (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/room-inventory/mine?roomId=1&startDate=2026-09-01&endDate=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-inventory", "mine"],
+              "query": [
+                { "key": "roomId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-05" }
+              ]
+            },
+            "description": "Yeu cau dang nhap + so huu Room nay. Tra du lieu bat ke Room/Property da duyet hay chua."
+          }
+        },
+        {
+          "name": "Set Inventory (Provider)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"1\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-05\",\n  \"totalRooms\": 10,\n  \"price\": 600000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/room-inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-inventory"]
+            },
+            "description": "Yeu cau dang nhap + so huu Room (qua Property -> Provider da APPROVED, 403 neu khong). Upsert theo tung ngay trong khoang [startDate, endDate] (toi da 90 ngay/lan goi) — ngay da co san se cap nhat lai totalRooms/availableRooms/price, ngay chua co se tao moi. `price` bo trong se giu gia cu (khi update) hoac de trong (khi tao moi, Frontend se fallback ve basePrice cua Room). 400 neu totalRooms moi < so phong da booked cua ngay do."
           }
         }
       ]
