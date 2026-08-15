@@ -1490,6 +1490,119 @@
       ]
     },
     {
+      "name": "Tour Booking",
+      "item": [
+        {
+          "name": "Check Tour Availability (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings/availability?tourId=1&departureDate=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings", "availability"],
+              "query": [
+                { "key": "tourId", "value": "1" },
+                { "key": "departureDate", "value": "2026-09-05" }
+              ]
+            },
+            "description": "Public, khong can dang nhap. Dung cho buoc 'Select Date' truoc khi nhap Customer Info. Tra ve { available, availableSeats, pricePerPerson, currency }."
+          }
+        },
+        {
+          "name": "List All Tour Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "CONFIRMED", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau role ADMIN. Phan trang, filter status tuy chon (CONFIRMED/CANCELLED)."
+          }
+        },
+        {
+          "name": "List My Tour Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings/mine?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings", "mine"],
+              "query": [{ "key": "status", "value": "upcoming", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap. Chi booking cua chinh minh. status tuy chon: upcoming/completed/cancelled (bo trong la tat ca)."
+          }
+        },
+        {
+          "name": "List Tour Bookings (Tour Operator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings/provider?tourId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings", "provider"],
+              "query": [
+                { "key": "tourId", "value": "1", "disabled": true },
+                { "key": "status", "value": "upcoming", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TOUR APPROVED (403 neu khong). Booking cua cac Tour minh so huu, tuy chon loc theo 1 tourId."
+          }
+        },
+        {
+          "name": "Create Tour Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tourId\": \"1\",\n  \"departureDate\": \"2026-09-05\",\n  \"numberOfPeople\": 2,\n  \"customerName\": \"Nguyen Van A\",\n  \"customerEmail\": \"a@example.com\",\n  \"customerPhone\": \"0900000001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings"]
+            },
+            "description": "Yeu cau dang nhap (bat ky USER nao). Tru `available`/cong `booked` cua TourSchedule atomic trong 1 transaction (chong overbooking). 400 neu Tour chua mo lich ngay do, 409 neu khong du cho. `numberOfPeople` khong duoc vuot `maxParticipants` cua Tour (400 neu vuot)."
+          }
+        },
+        {
+          "name": "Cancel Tour Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings", ":id", "cancel"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+          }
+        }
+      ]
+    },
+    {
       "name": "Room",
       "item": [
         {
