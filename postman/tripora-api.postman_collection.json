@@ -1305,6 +1305,26 @@
       "name": "Booking",
       "item": [
         {
+          "name": "List All Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "CANCELLED", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau role ADMIN. Xem toan bo Booking cua moi User, kem thong tin nguoi dat (email/ten). Filter theo status: CONFIRMED | CANCELLED."
+          }
+        },
+        {
           "name": "Check Availability (Public)",
           "request": {
             "method": "GET",
