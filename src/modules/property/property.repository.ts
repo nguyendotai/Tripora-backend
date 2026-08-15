@@ -10,13 +10,14 @@ export class PropertyRepository {
     where: Prisma.PropertyWhereInput,
     skip: number,
     take: number,
+    orderBy: Prisma.PropertyOrderByWithRelationInput = { createdAt: 'desc' },
   ): Promise<[Property[], number]> {
     return this.prisma.$transaction([
       this.prisma.property.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           destination: { select: { id: true, name: true, slug: true } },
           provider: { select: { id: true, name: true, userId: true } },
@@ -24,6 +25,23 @@ export class PropertyRepository {
       }),
       this.prisma.property.count({ where }),
     ]);
+  }
+
+  /** Gia thap nhat trong so cac Room ACTIVE cua tung Property — dung cho the "tu X d/dem". */
+  async findMinPricesByPropertyIds(propertyIds: bigint[]): Promise<Map<bigint, Prisma.Decimal>> {
+    if (propertyIds.length === 0) {
+      return new Map();
+    }
+    const grouped = await this.prisma.room.groupBy({
+      by: ['propertyId'],
+      where: { propertyId: { in: propertyIds }, status: 'ACTIVE', deletedAt: null },
+      _min: { basePrice: true },
+    });
+    return new Map(
+      grouped
+        .filter((g) => g._min.basePrice !== null)
+        .map((g) => [g.propertyId, g._min.basePrice as Prisma.Decimal]),
+    );
   }
 
   findBySlug(slug: string): Promise<Property | null> {
