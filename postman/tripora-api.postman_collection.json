@@ -1052,10 +1052,11 @@
                 { "key": "page", "value": "1" },
                 { "key": "limit", "value": "20" },
                 { "key": "q", "value": "", "disabled": true },
-                { "key": "destinationId", "value": "", "disabled": true }
+                { "key": "destinationId", "value": "", "disabled": true },
+                { "key": "sort", "value": "newest", "disabled": true, "description": "newest (mac dinh) | name_asc" }
               ]
             },
-            "description": "Public. Chi tra Property da APPROVED. Filter q (contains name) / destinationId."
+            "description": "Public. Chi tra Property da APPROVED. Filter q (contains name) / destinationId. Sort newest (mac dinh) hoac name_asc. Moi item kem `fromPrice` (gia thap nhat trong cac Room ACTIVE cua Property do, null neu chua co Room nao)."
           }
         },
         {
