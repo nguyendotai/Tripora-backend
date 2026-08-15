@@ -129,7 +129,42 @@ export class BookingRepository {
     filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
     today: Date,
   ): Promise<(HotelBooking & { guests: Guest[] })[]> {
-    const where: Prisma.HotelBookingWhereInput = { userId };
+    const where = this.applyStatusFilter({ userId }, filter, today);
+    return this.prisma.hotelBooking.findMany({
+      where,
+      include: { guests: true },
+      orderBy: { checkInDate: 'desc' },
+    });
+  }
+
+  /** Provider — xem Booking cua cac Property minh so huu, optional loc theo 1 Property. */
+  findManyByProvider(
+    providerId: bigint,
+    propertyId: bigint | undefined,
+    filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
+    today: Date,
+  ): Promise<(HotelBooking & { guests: Guest[] })[]> {
+    const where = this.applyStatusFilter(
+      {
+        property: { providerId },
+        ...(propertyId && { propertyId }),
+      },
+      filter,
+      today,
+    );
+    return this.prisma.hotelBooking.findMany({
+      where,
+      include: { guests: true },
+      orderBy: { checkInDate: 'desc' },
+    });
+  }
+
+  private applyStatusFilter(
+    base: Prisma.HotelBookingWhereInput,
+    filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
+    today: Date,
+  ): Prisma.HotelBookingWhereInput {
+    const where: Prisma.HotelBookingWhereInput = { ...base };
     if (filter === 'upcoming') {
       where.status = BookingStatus.CONFIRMED;
       where.checkOutDate = { gte: today };
@@ -139,12 +174,7 @@ export class BookingRepository {
     } else if (filter === 'cancelled') {
       where.status = BookingStatus.CANCELLED;
     }
-
-    return this.prisma.hotelBooking.findMany({
-      where,
-      include: { guests: true },
-      orderBy: { checkInDate: 'desc' },
-    });
+    return where;
   }
 
   /**
