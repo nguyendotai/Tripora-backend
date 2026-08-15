@@ -9,6 +9,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApplyProviderDto } from './dto/apply-provider.dto';
 import { ListProvidersDto } from './dto/list-providers.dto';
 import { ReviewProviderDto } from './dto/review-provider.dto';
+import { SuspendProviderDto } from './dto/suspend-provider.dto';
 import { ProviderService } from './provider.service';
 
 @ApiTags('Provider')
@@ -40,5 +41,19 @@ export class ProviderController {
   @Roles(Role.ADMIN)
   review(@Param('id') id: string, @Body() dto: ReviewProviderDto) {
     return this.providerService.review(parseIdParam(id), dto.status, dto.reason);
+  }
+
+  @Patch(':id/suspend')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  suspend(@Param('id') id: string, @Body() dto: SuspendProviderDto) {
+    return this.providerService.suspend(parseIdParam(id), dto.reason);
+  }
+
+  @Patch(':id/unsuspend')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  unsuspend(@Param('id') id: string) {
+    return this.providerService.unsuspend(parseIdParam(id));
   }
 }

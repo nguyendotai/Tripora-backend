@@ -996,6 +996,43 @@
             },
             "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon (toi da 500 ky tu), chi co y nghia khi REJECTED — se duoc dua vao noi dung Notification gui cho chu ho so. Tu dong gui Notification ca 2 truong hop."
           }
+        },
+        {
+          "name": "Suspend Provider (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Vi pham chinh sach dat phong\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/:id/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", ":id", "suspend"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. Khoa 1 Provider dang APPROVED (400 neu khong phai APPROVED). Chuyen status -> SUSPENDED, chan moi thao tac tu quan ly Property/Room/Room Inventory (dung lai check status===APPROVED co san, khong can sua gi them) va chan dang nhap vao Admin. `reason` tuy chon, dua vao Notification gui chu ho so."
+          }
+        },
+        {
+          "name": "Unsuspend Provider (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/:id/unsuspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", ":id", "unsuspend"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. Mo khoa 1 Provider dang SUSPENDED (400 neu khong phai SUSPENDED), tra ve APPROVED. Tu dong gui Notification cho chu ho so."
+          }
         }
       ]
     },

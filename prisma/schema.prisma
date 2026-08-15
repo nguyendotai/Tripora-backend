@@ -214,6 +214,7 @@ enum ProviderStatus {
   PENDING
   APPROVED
   REJECTED
+  SUSPENDED
 }
 
 // V2 scope: 1 User -> 1 Provider profile (chưa có Organization/multi-member).

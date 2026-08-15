@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ProviderStatus } from '@prisma/client';
 import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 import { NotificationService } from '../notification/notification.service';
@@ -68,6 +68,47 @@ export class ProviderService {
       status === 'APPROVED'
         ? `Hồ sơ đối tác "${provider.name}" của bạn đã được duyệt. Bạn có thể bắt đầu tạo khách sạn.`
         : rejectMessage,
+    );
+
+    return updated;
+  }
+
+  /** Khoá 1 Provider đang APPROVED — chặn mọi thao tác tự quản lý (Property/Room/Inventory) cho tới khi mở khoá. */
+  async suspend(id: bigint, reason?: string) {
+    const provider = await this.providerRepository.findById(id);
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+    if (provider.status !== ProviderStatus.APPROVED) {
+      throw new BadRequestException('Only an approved provider can be suspended');
+    }
+
+    const updated = await this.providerRepository.updateStatus(id, ProviderStatus.SUSPENDED);
+
+    const message = reason
+      ? `Hồ sơ đối tác "${provider.name}" của bạn đã bị khoá. Lý do: ${reason}`
+      : `Hồ sơ đối tác "${provider.name}" của bạn đã bị khoá. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.`;
+    await this.notificationService.notify(provider.userId, 'Hồ sơ đối tác đã bị khoá', message);
+
+    return updated;
+  }
+
+  /** Mở khoá 1 Provider đang SUSPENDED, trả lại APPROVED. */
+  async unsuspend(id: bigint) {
+    const provider = await this.providerRepository.findById(id);
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+    if (provider.status !== ProviderStatus.SUSPENDED) {
+      throw new BadRequestException('Only a suspended provider can be unsuspended');
+    }
+
+    const updated = await this.providerRepository.updateStatus(id, ProviderStatus.APPROVED);
+
+    await this.notificationService.notify(
+      provider.userId,
+      'Hồ sơ đối tác đã được mở khoá',
+      `Hồ sơ đối tác "${provider.name}" của bạn đã được mở khoá. Bạn có thể tiếp tục quản lý khách sạn.`,
     );
 
     return updated;
