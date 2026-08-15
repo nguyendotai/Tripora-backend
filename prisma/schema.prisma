@@ -71,6 +71,7 @@ model Destination {
   reviews       Review[]
   tripItems     TripItem[]
   properties    Property[]
+  tours         Tour[]
 
   @@index([country])
   @@map("destinations")
@@ -234,6 +235,7 @@ model Provider {
 
   user       User       @relation(fields: [userId], references: [id])
   properties Property[]
+  tours      Tour[]
 
   @@map("providers")
 }
@@ -370,4 +372,41 @@ model Guest {
 
   @@index([bookingId])
   @@map("guests")
+}
+
+enum TourStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// V3 scope: Tour = tour du lịch của 1 Provider có type=TOUR (tái dùng Provider/ProviderStatus
+// đã có từ V2, chỉ khác type — cùng luồng apply/duyệt, không tạo entity Tour Operator riêng).
+// Itinerary/Schedule/Guide/Booking cho Tour sẽ thêm ở các vòng V3 sau.
+model Tour {
+  id                 BigInt     @id @default(autoincrement())
+  providerId         BigInt     @map("provider_id")
+  destinationId      BigInt?    @map("destination_id")
+  title              String
+  slug               String     @unique
+  description        String?    @db.Text
+  images             Json?
+  durationLabel      String?    @map("duration_label")
+  price              Decimal    @db.Decimal(10, 2)
+  currency           String     @default("VND")
+  maxParticipants    Int?       @map("max_participants")
+  included           String?    @db.Text
+  excluded           String?    @db.Text
+  cancellationPolicy String?    @db.Text @map("cancellation_policy")
+  status             TourStatus @default(PENDING)
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  deletedAt          DateTime?  @map("deleted_at")
+
+  provider    Provider     @relation(fields: [providerId], references: [id])
+  destination Destination? @relation(fields: [destinationId], references: [id])
+
+  @@index([providerId])
+  @@index([destinationId])
+  @@map("tours")
 }

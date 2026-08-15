@@ -22,6 +22,7 @@ export class ProviderService {
     return this.providerRepository.create({
       userId,
       name: dto.name,
+      type: dto.type,
       description: dto.description,
       logo: dto.logo,
       contact: dto.contact,
