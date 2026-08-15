@@ -18,7 +18,8 @@ export type CreateTourBookingResult =
   | { ok: true; booking: TourBooking }
   | { ok: false; reason: 'MISSING_SCHEDULE' | 'SOLD_OUT' };
 
-export type CancelTourBookingResult = { ok: true; booking: TourBooking } | { ok: false };
+export type CancelTourBookingResult =
+  { ok: true; booking: TourBooking } | { ok: false };
 
 export interface CreateTourBookingParams {
   userId: bigint;
@@ -41,12 +42,19 @@ export class TourBookingRepository {
    * Tru available atomic qua raw UPDATE ... WHERE available >= :numberOfPeople,
    * kiem tra affected rows — 0 thi rollback ca transaction (backend/CLAUDE.md muc 3).
    */
-  async createBooking(params: CreateTourBookingParams): Promise<CreateTourBookingResult> {
+  async createBooking(
+    params: CreateTourBookingParams,
+  ): Promise<CreateTourBookingResult> {
     try {
       const booking = await this.prisma.$transaction(async (tx) => {
         const dateStr = params.departureDate.toISOString().slice(0, 10);
         const schedule = await tx.tourSchedule.findUnique({
-          where: { tourId_departureDate: { tourId: params.tourId, departureDate: params.departureDate } },
+          where: {
+            tourId_departureDate: {
+              tourId: params.tourId,
+              departureDate: params.departureDate,
+            },
+          },
         });
         if (!schedule) {
           throw new MissingScheduleError();
@@ -102,7 +110,16 @@ export class TourBookingRepository {
     skip: number,
     take: number,
   ): Promise<
-    [(TourBooking & { user: { email: string; firstName: string | null; lastName: string | null } })[], number]
+    [
+      (TourBooking & {
+        user: {
+          email: string;
+          firstName: string | null;
+          lastName: string | null;
+        };
+      })[],
+      number,
+    ]
   > {
     return this.prisma.$transaction([
       this.prisma.tourBooking.findMany({
@@ -110,7 +127,9 @@ export class TourBookingRepository {
         skip,
         take,
         orderBy: { createdAt: 'desc' },
-        include: { user: { select: { email: true, firstName: true, lastName: true } } },
+        include: {
+          user: { select: { email: true, firstName: true, lastName: true } },
+        },
       }),
       this.prisma.tourBooking.count({ where }),
     ]);
@@ -122,7 +141,10 @@ export class TourBookingRepository {
     today: Date,
   ): Promise<TourBooking[]> {
     const where = this.applyStatusFilter({ userId }, filter, today);
-    return this.prisma.tourBooking.findMany({ where, orderBy: { departureDate: 'desc' } });
+    return this.prisma.tourBooking.findMany({
+      where,
+      orderBy: { departureDate: 'desc' },
+    });
   }
 
   /** Tour Operator — xem TourBooking cua cac Tour minh so huu, optional loc theo 1 Tour. */
@@ -132,7 +154,13 @@ export class TourBookingRepository {
     filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
     today: Date,
   ): Promise<
-    (TourBooking & { user: { email: string; firstName: string | null; lastName: string | null } })[]
+    (TourBooking & {
+      user: {
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+      };
+    })[]
   > {
     const where = this.applyStatusFilter(
       {
@@ -144,8 +172,21 @@ export class TourBookingRepository {
     );
     return this.prisma.tourBooking.findMany({
       where,
-      include: { user: { select: { email: true, firstName: true, lastName: true } } },
+      include: {
+        user: { select: { email: true, firstName: true, lastName: true } },
+      },
       orderBy: { departureDate: 'desc' },
+    });
+  }
+
+  /** Tour Guide — danh sach khach da xac nhan cho 1 ngay khoi hanh minh duoc phan cong. */
+  findManyByTourAndDate(
+    tourId: bigint,
+    departureDate: Date,
+  ): Promise<TourBooking[]> {
+    return this.prisma.tourBooking.findMany({
+      where: { tourId, departureDate, status: BookingStatus.CONFIRMED },
+      orderBy: { createdAt: 'asc' },
     });
   }
 
