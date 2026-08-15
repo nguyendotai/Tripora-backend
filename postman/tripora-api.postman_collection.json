@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tripora API",
-    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property + Room + Room Inventory). Import together with tripora-api.postman_environment.json.",
+    "description": "Tripora backend API — V1 (Auth + User Profile/Admin + Destination + Travel Guide + Trip Planner + Wishlist + Review + Blog + Notification + Report) + V2 (Provider + Property + Room + Room Inventory + Booking). Import together with tripora-api.postman_environment.json.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1297,6 +1297,49 @@
               "path": ["room-inventory"]
             },
             "description": "Yeu cau dang nhap + so huu Room (qua Property -> Provider da APPROVED, 403 neu khong). Upsert theo tung ngay trong khoang [startDate, endDate] (toi da 90 ngay/lan goi) — ngay da co san se cap nhat lai totalRooms/availableRooms/price, ngay chua co se tao moi. `price` bo trong se giu gia cu (khi update) hoac de trong (khi tao moi, Frontend se fallback ve basePrice cua Room). 400 neu totalRooms moi < so phong da booked cua ngay do."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Check Availability (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/availability?roomId=1&checkInDate=2026-09-01&checkOutDate=2026-09-03",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "availability"],
+              "query": [
+                { "key": "roomId", "value": "1" },
+                { "key": "checkInDate", "value": "2026-09-01" },
+                { "key": "checkOutDate", "value": "2026-09-03" }
+              ]
+            },
+            "description": "Public, khong can dang nhap. Tra { available, nights, totalPrice, currency, unavailableDates[] } — dung o buoc 'Check Availability' truoc khi nhap Guest Information. checkOutDate la ngay tra phong, khong tinh vao so dem (VD 09-01 -> 09-03 la 2 dem: 09-01 va 09-02)."
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"1\",\n  \"checkInDate\": \"2026-09-01\",\n  \"checkOutDate\": \"2026-09-03\",\n  \"guests\": [\n    { \"fullName\": \"Nguyen Van A\", \"email\": \"a@example.com\", \"phone\": \"0900000001\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"]
+            },
+            "description": "Yeu cau dang nhap (bat ky USER nao, khong can Provider). Tru availableRooms atomic tung dem trong 1 transaction (UPDATE ... WHERE available_rooms >= 1) — 409 neu het phong 1 trong cac ngay, 400 neu ngay do Provider chua mo ban ton kho hoac so guests vuot capacity cua Room. Booking luu snapshot propertyName/roomName/totalPrice tai thoi diem dat, khong bao gio join nguoc lay gia hien thi."
           }
         }
       ]

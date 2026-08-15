@@ -35,6 +35,7 @@ model User {
   trips         Trip[]
   notifications Notification[]
   provider      Provider?
+  bookings      HotelBooking[]
 
   @@map("users")
 }
@@ -262,9 +263,10 @@ model Property {
   updatedAt     DateTime       @updatedAt @map("updated_at")
   deletedAt     DateTime?      @map("deleted_at")
 
-  provider    Provider     @relation(fields: [providerId], references: [id])
-  destination Destination? @relation(fields: [destinationId], references: [id])
+  provider    Provider       @relation(fields: [providerId], references: [id])
+  destination Destination?   @relation(fields: [destinationId], references: [id])
   rooms       Room[]
+  bookings    HotelBooking[]
 
   @@index([providerId])
   @@index([destinationId])
@@ -295,13 +297,14 @@ model Room {
 
   property  Property        @relation(fields: [propertyId], references: [id])
   inventory RoomInventory[]
+  bookings  HotelBooking[]
 
   @@index([propertyId])
   @@map("property_rooms")
 }
 
-// Ton kho + gia theo tung ngay cu the cua 1 Room. Booking Engine (phan sau) se
-// tru availableRooms atomic khi tao Booking — chua wire o day, chi CRUD.
+// Ton kho + gia theo tung ngay cu the cua 1 Room. HotelBooking tru availableRooms
+// atomic qua raw UPDATE ... WHERE available_rooms >= 1 (xem BookingRepository).
 model RoomInventory {
   id             BigInt   @id @default(autoincrement())
   roomId         BigInt   @map("room_id")
@@ -318,4 +321,51 @@ model RoomInventory {
   @@unique([roomId, date])
   @@index([roomId])
   @@map("room_inventory")
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+// Snapshot propertyName/roomName/totalPrice tai thoi diem dat — khong bao gio join
+// nguoc lay gia hien thi (dung theo backend/CLAUDE.md muc 3 "Booking Snapshot").
+model HotelBooking {
+  id            BigInt        @id @default(autoincrement())
+  userId        BigInt        @map("user_id")
+  roomId        BigInt        @map("room_id")
+  propertyId    BigInt        @map("property_id")
+  propertyName  String        @map("property_name")
+  roomName      String        @map("room_name")
+  checkInDate   DateTime      @db.Date @map("check_in_date")
+  checkOutDate  DateTime      @db.Date @map("check_out_date")
+  nights        Int
+  totalPrice    Decimal       @db.Decimal(10, 2) @map("total_price")
+  currency      String        @default("VND")
+  status        BookingStatus @default(CONFIRMED)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  room     Room     @relation(fields: [roomId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+  guests   Guest[]
+
+  @@index([userId])
+  @@index([roomId])
+  @@map("hotel_bookings")
+}
+
+model Guest {
+  id        BigInt   @id @default(autoincrement())
+  bookingId BigInt   @map("booking_id")
+  fullName  String   @map("full_name")
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  booking HotelBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("guests")
 }
