@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ProviderStatus, PropertyStatus } from '@prisma/client';
+import { Prisma, ProviderStatus, ProviderType, PropertyStatus } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -175,9 +175,14 @@ export class PropertyService {
     return updated;
   }
 
+  /** Chỉ Provider type=HOTEL đã APPROVED mới quản lý Property — tách domain với Tour Operator (V3). */
   private async getOwnedApprovedProvider(userId: bigint) {
     const provider = await this.providerRepository.findByUserId(userId);
-    if (!provider || provider.status !== ProviderStatus.APPROVED) {
+    if (
+      !provider ||
+      provider.status !== ProviderStatus.APPROVED ||
+      provider.type !== ProviderType.HOTEL
+    ) {
       throw new ForbiddenException('You need an approved provider profile to do this');
     }
     return provider;

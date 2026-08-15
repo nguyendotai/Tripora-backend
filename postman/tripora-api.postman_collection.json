@@ -931,14 +931,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Khach san Bien Xanh\",\n  \"description\": \"Chuyen cung cap phong khach san ven bien\",\n  \"contact\": \"0901234567\"\n}"
+              "raw": "{\n  \"name\": \"Khach san Bien Xanh\",\n  \"type\": \"HOTEL\",\n  \"description\": \"Chuyen cung cap phong khach san ven bien\",\n  \"contact\": \"0901234567\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/providers/apply",
               "host": ["{{baseUrl}}"],
               "path": ["providers", "apply"]
             },
-            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). Type mac dinh HOTEL (V2 chi co Hotel). Trang thai ban dau PENDING."
+            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). `type` tuy chon: HOTEL (mac dinh, V2) hoac TOUR (V3, de tao Tour) — ACTIVITY/TRANSPORT/FLIGHT du co trong enum nhung chua co domain nao dung toi. Trang thai ban dau PENDING."
           }
         },
         {
@@ -1178,6 +1178,155 @@
               "raw": "{{baseUrl}}/properties/:id/review",
               "host": ["{{baseUrl}}"],
               "path": ["properties", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon, dua vao Notification gui cho chu so huu."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tour",
+      "item": [
+        {
+          "name": "List Tours (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tours?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "destinationId", "value": "", "disabled": true },
+                { "key": "sort", "value": "newest", "disabled": true, "description": "newest (mac dinh) | title_asc" }
+              ]
+            },
+            "description": "Public. Chi tra Tour da APPROVED. Filter q (contains title) / destinationId. Sort newest (mac dinh) hoac title_asc."
+          }
+        },
+        {
+          "name": "Get Tour by Slug (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tours/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", ":slug"],
+              "variable": [{ "key": "slug", "value": "kham-pha-da-lat-2n1d" }]
+            },
+            "description": "Public. 404 neu khong ton tai hoac chua APPROVED."
+          }
+        },
+        {
+          "name": "List My Tours (Tour Operator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tours/mine?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", "mine"],
+              "query": [{ "key": "status", "value": "PENDING", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TOUR va APPROVED (403 neu khong). Tra toan bo Tour cua chinh minh, bat ky status."
+          }
+        },
+        {
+          "name": "List Tours For Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tours/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN. Tra Tour cua moi Provider, filter theo status."
+          }
+        },
+        {
+          "name": "Create Tour",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Kham pha Da Lat 2N1D\",\n  \"destinationId\": \"1\",\n  \"description\": \"Tour tham quan cac diem noi tieng o Da Lat\",\n  \"durationLabel\": \"2 ngay 1 dem\",\n  \"price\": \"1500000\",\n  \"maxParticipants\": 20,\n  \"included\": \"Xe dua don, huong dan vien, 2 bua an\",\n  \"excluded\": \"Chi phi ca nhan\",\n  \"cancellationPolicy\": \"Huy truoc 3 ngay hoan 100%\",\n  \"images\": [\"https://picsum.photos/seed/tour1/800/600\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tours",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TOUR va APPROVED (403 neu khong). Trang thai ban dau PENDING, chua hien thi public toi khi Admin duyet. slug tu sinh + dedup tu title."
+          }
+        },
+        {
+          "name": "Update Tour",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Cap nhat mo ta\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tours/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu (Tour Operator) moi duoc sua. 403 neu khong phai chu so huu."
+          }
+        },
+        {
+          "name": "Delete Tour",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tours/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu moi duoc xoa. Soft delete (204 No Content)."
+          }
+        },
+        {
+          "name": "Review Tour (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tours/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", ":id", "review"],
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED. `reason` tuy chon, dua vao Notification gui cho chu so huu."
