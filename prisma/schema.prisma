@@ -19,25 +19,26 @@ enum UserStatus {
 }
 
 model User {
-  id            BigInt         @id @default(autoincrement())
-  email         String         @unique
-  passwordHash  String         @map("password_hash")
-  firstName     String?        @map("first_name")
-  lastName      String?        @map("last_name")
-  avatar        String?        @map("avatar")
-  role          Role           @default(USER)
-  status        UserStatus     @default(ACTIVE)
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  deletedAt     DateTime?      @map("deleted_at")
-  refreshTokens RefreshToken[]
-  wishlistItems WishlistItem[]
-  reviews       Review[]
-  trips         Trip[]
-  notifications Notification[]
-  provider      Provider?
-  bookings      HotelBooking[]
-  tourBookings  TourBooking[]
+  id                 BigInt              @id @default(autoincrement())
+  email              String              @unique
+  passwordHash       String              @map("password_hash")
+  firstName          String?             @map("first_name")
+  lastName           String?             @map("last_name")
+  avatar             String?             @map("avatar")
+  role               Role                @default(USER)
+  status             UserStatus          @default(ACTIVE)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
+  refreshTokens      RefreshToken[]
+  wishlistItems      WishlistItem[]
+  reviews            Review[]
+  trips              Trip[]
+  notifications      Notification[]
+  provider           Provider?
+  bookings           HotelBooking[]
+  tourBookings       TourBooking[]
+  experienceBookings ExperienceBooking[]
 
   @@map("users")
 }
@@ -73,6 +74,7 @@ model Destination {
   tripItems     TripItem[]
   properties    Property[]
   tours         Tour[]
+  experiences   Experience[]
 
   @@index([country])
   @@map("destinations")
@@ -178,15 +180,15 @@ model TripItem {
 }
 
 model BlogPost {
-  id          BigInt    @id @default(autoincrement())
-  title       String
-  slug        String    @unique
-  excerpt     String?
-  content     String    @db.Text
-  coverImage  String?   @map("cover_image")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  id         BigInt    @id @default(autoincrement())
+  title      String
+  slug       String    @unique
+  excerpt    String?
+  content    String    @db.Text
+  coverImage String?   @map("cover_image")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
 
   @@map("blog_posts")
 }
@@ -234,9 +236,10 @@ model Provider {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
-  user       User       @relation(fields: [userId], references: [id])
-  properties Property[]
-  tours      Tour[]
+  user        User         @relation(fields: [userId], references: [id])
+  properties  Property[]
+  tours       Tour[]
+  experiences Experience[]
 
   @@map("providers")
 }
@@ -291,7 +294,7 @@ model Room {
   description String?    @db.Text
   capacity    Int?
   beds        Json?
-  basePrice   Decimal    @db.Decimal(10, 2) @map("base_price")
+  basePrice   Decimal    @map("base_price") @db.Decimal(10, 2)
   currency    String     @default("VND")
   amenities   Json?
   images      Json?
@@ -336,20 +339,20 @@ enum BookingStatus {
 // Snapshot propertyName/roomName/totalPrice tai thoi diem dat — khong bao gio join
 // nguoc lay gia hien thi (dung theo backend/CLAUDE.md muc 3 "Booking Snapshot").
 model HotelBooking {
-  id            BigInt        @id @default(autoincrement())
-  userId        BigInt        @map("user_id")
-  roomId        BigInt        @map("room_id")
-  propertyId    BigInt        @map("property_id")
-  propertyName  String        @map("property_name")
-  roomName      String        @map("room_name")
-  checkInDate   DateTime      @db.Date @map("check_in_date")
-  checkOutDate  DateTime      @db.Date @map("check_out_date")
-  nights        Int
-  totalPrice    Decimal       @db.Decimal(10, 2) @map("total_price")
-  currency      String        @default("VND")
-  status        BookingStatus @default(CONFIRMED)
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  id           BigInt        @id @default(autoincrement())
+  userId       BigInt        @map("user_id")
+  roomId       BigInt        @map("room_id")
+  propertyId   BigInt        @map("property_id")
+  propertyName String        @map("property_name")
+  roomName     String        @map("room_name")
+  checkInDate  DateTime      @map("check_in_date") @db.Date
+  checkOutDate DateTime      @map("check_out_date") @db.Date
+  nights       Int
+  totalPrice   Decimal       @map("total_price") @db.Decimal(10, 2)
+  currency     String        @default("VND")
+  status       BookingStatus @default(CONFIRMED)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   user     User     @relation(fields: [userId], references: [id])
   room     Room     @relation(fields: [roomId], references: [id])
@@ -398,7 +401,7 @@ model Tour {
   maxParticipants    Int?       @map("max_participants")
   included           String?    @db.Text
   excluded           String?    @db.Text
-  cancellationPolicy String?    @db.Text @map("cancellation_policy")
+  cancellationPolicy String?    @map("cancellation_policy") @db.Text
   status             TourStatus @default(PENDING)
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
@@ -421,7 +424,7 @@ model Tour {
 model TourSchedule {
   id            BigInt   @id @default(autoincrement())
   tourId        BigInt   @map("tour_id")
-  departureDate DateTime @db.Date @map("departure_date")
+  departureDate DateTime @map("departure_date") @db.Date
   capacity      Int
   available     Int
   booked        Int      @default(0)
@@ -466,12 +469,12 @@ model TourBooking {
   userId         BigInt        @map("user_id")
   tourId         BigInt        @map("tour_id")
   tourTitle      String        @map("tour_title")
-  departureDate  DateTime      @db.Date @map("departure_date")
+  departureDate  DateTime      @map("departure_date") @db.Date
   numberOfPeople Int           @map("number_of_people")
   customerName   String        @map("customer_name")
   customerEmail  String?       @map("customer_email")
   customerPhone  String?       @map("customer_phone")
-  totalPrice     Decimal       @db.Decimal(10, 2) @map("total_price")
+  totalPrice     Decimal       @map("total_price") @db.Decimal(10, 2)
   currency       String        @default("VND")
   status         BookingStatus @default(CONFIRMED)
   createdAt      DateTime      @default(now()) @map("created_at")
@@ -483,4 +486,89 @@ model TourBooking {
   @@index([userId])
   @@index([tourId])
   @@map("tour_bookings")
+}
+
+enum ExperienceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// V3 scope: Experience = hoat dong ngan (ve tham quan, lop hoc, trai nghiem 1 buoi...) cua 1 Provider
+// type=ACTIVITY (ProviderType.ACTIVITY co san tu V2, chua dung toi — cung cach tai dung Provider da
+// ap dung cho Tour Operator type=TOUR). Quy mo nho hon Tour co chu dich: khong co Itinerary rieng
+// (1 buoi/ngay, khong can chia lich trinh nhieu ngay).
+model Experience {
+  id                 BigInt           @id @default(autoincrement())
+  providerId         BigInt           @map("provider_id")
+  destinationId      BigInt?          @map("destination_id")
+  title              String
+  slug               String           @unique
+  description        String?          @db.Text
+  images             Json?
+  durationLabel      String?          @map("duration_label")
+  price              Decimal          @db.Decimal(10, 2)
+  currency           String           @default("VND")
+  maxParticipants    Int?             @map("max_participants")
+  included           String?          @db.Text
+  excluded           String?          @db.Text
+  cancellationPolicy String?          @map("cancellation_policy") @db.Text
+  status             ExperienceStatus @default(PENDING)
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  deletedAt          DateTime?        @map("deleted_at")
+
+  provider    Provider             @relation(fields: [providerId], references: [id])
+  destination Destination?         @relation(fields: [destinationId], references: [id])
+  schedules   ExperienceSchedule[]
+  bookings    ExperienceBooking[]
+
+  @@index([providerId])
+  @@index([destinationId])
+  @@map("experiences")
+}
+
+// Mirror TourSchedule y het — bulk-set theo khoang ngay, 3 cot capacity/available/booked de
+// decrement atomic o ExperienceBooking dung pattern backend/CLAUDE.md muc 3.
+model ExperienceSchedule {
+  id            BigInt   @id @default(autoincrement())
+  experienceId  BigInt   @map("experience_id")
+  departureDate DateTime @map("departure_date") @db.Date
+  capacity      Int
+  available     Int
+  booked        Int      @default(0)
+  price         Decimal? @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  experience Experience @relation(fields: [experienceId], references: [id])
+
+  @@unique([experienceId, departureDate])
+  @@index([experienceId])
+  @@map("experience_schedules")
+}
+
+// Mirror TourBooking y het — 1 nguoi lien he + numberOfPeople, khong phai danh sach Guest co ten.
+model ExperienceBooking {
+  id              BigInt        @id @default(autoincrement())
+  userId          BigInt        @map("user_id")
+  experienceId    BigInt        @map("experience_id")
+  experienceTitle String        @map("experience_title")
+  departureDate   DateTime      @map("departure_date") @db.Date
+  numberOfPeople  Int           @map("number_of_people")
+  customerName    String        @map("customer_name")
+  customerEmail   String?       @map("customer_email")
+  customerPhone   String?       @map("customer_phone")
+  totalPrice      Decimal       @map("total_price") @db.Decimal(10, 2)
+  currency        String        @default("VND")
+  status          BookingStatus @default(CONFIRMED)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id])
+  experience Experience @relation(fields: [experienceId], references: [id])
+
+  @@index([userId])
+  @@index([experienceId])
+  @@map("experience_bookings")
 }

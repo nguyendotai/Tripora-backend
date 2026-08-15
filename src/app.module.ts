@@ -15,6 +15,9 @@ import { TourModule } from './modules/tour/tour.module';
 import { TourItineraryModule } from './modules/tour-itinerary/tour-itinerary.module';
 import { TourScheduleModule } from './modules/tour-schedule/tour-schedule.module';
 import { TourBookingModule } from './modules/tour-booking/tour-booking.module';
+import { ExperienceModule } from './modules/experience/experience.module';
+import { ExperienceScheduleModule } from './modules/experience-schedule/experience-schedule.module';
+import { ExperienceBookingModule } from './modules/experience-booking/experience-booking.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -46,6 +49,9 @@ import { ReviewModule } from './modules/review/review.module';
     TourItineraryModule,
     TourScheduleModule,
     TourBookingModule,
+    ExperienceModule,
+    ExperienceScheduleModule,
+    ExperienceBookingModule,
   ],
   controllers: [],
   providers: [],
