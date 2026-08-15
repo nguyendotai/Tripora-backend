@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Guest, HotelBooking, Prisma } from '@prisma/client';
+import { BookingStatus, Guest, HotelBooking, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 class MissingInventoryError extends Error {
@@ -17,6 +17,10 @@ class SoldOutError extends Error {
 export type CreateBookingResult =
   | { ok: true; booking: HotelBooking & { guests: Guest[] } }
   | { ok: false; reason: 'MISSING_INVENTORY' | 'SOLD_OUT'; date: Date };
+
+export type CancelBookingResult =
+  | { ok: true; booking: HotelBooking & { guests: Guest[] } }
+  | { ok: false };
 
 export interface CreateBookingParams {
   userId: bigint;
@@ -93,5 +97,69 @@ export class BookingRepository {
       }
       throw error;
     }
+  }
+
+  findById(id: bigint): Promise<HotelBooking | null> {
+    return this.prisma.hotelBooking.findUnique({ where: { id } });
+  }
+
+  findManyByUser(
+    userId: bigint,
+    filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
+    today: Date,
+  ): Promise<(HotelBooking & { guests: Guest[] })[]> {
+    const where: Prisma.HotelBookingWhereInput = { userId };
+    if (filter === 'upcoming') {
+      where.status = BookingStatus.CONFIRMED;
+      where.checkOutDate = { gte: today };
+    } else if (filter === 'completed') {
+      where.status = BookingStatus.CONFIRMED;
+      where.checkOutDate = { lt: today };
+    } else if (filter === 'cancelled') {
+      where.status = BookingStatus.CANCELLED;
+    }
+
+    return this.prisma.hotelBooking.findMany({
+      where,
+      include: { guests: true },
+      orderBy: { checkInDate: 'desc' },
+    });
+  }
+
+  /**
+   * Hoan tra availableRooms/bookedRooms atomic tung dem, cung 1 transaction voi
+   * viec chuyen status -> CANCELLED (chi thanh cong neu status hien tai la CONFIRMED,
+   * kiem tra qua affected rows de tranh race huy trung).
+   */
+  async cancelBooking(
+    bookingId: bigint,
+    roomId: bigint,
+    dates: Date[],
+  ): Promise<CancelBookingResult> {
+    const booking = await this.prisma.$transaction(async (tx) => {
+      const affected = await tx.$executeRaw`
+        UPDATE hotel_bookings SET status = 'CANCELLED', updated_at = NOW()
+        WHERE id = ${bookingId} AND status = 'CONFIRMED'
+      `;
+      if (affected === 0) {
+        return null;
+      }
+
+      for (const date of dates) {
+        const dateStr = date.toISOString().slice(0, 10);
+        await tx.$executeRaw`
+          UPDATE room_inventory
+          SET available_rooms = available_rooms + 1, booked_rooms = booked_rooms - 1
+          WHERE room_id = ${roomId} AND date = ${dateStr} AND booked_rooms >= 1
+        `;
+      }
+
+      return tx.hotelBooking.findUnique({ where: { id: bookingId }, include: { guests: true } });
+    });
+
+    if (!booking) {
+      return { ok: false };
+    }
+    return { ok: true, booking };
   }
 }
