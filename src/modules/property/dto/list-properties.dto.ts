@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNumberString, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsNumberString, IsOptional, IsString, Min } from 'class-validator';
 import { PropertyStatus } from '@prisma/client';
 
 export class ListPropertiesDto {
@@ -14,6 +14,10 @@ export class ListPropertiesDto {
   @IsOptional()
   @IsEnum(PropertyStatus)
   status?: PropertyStatus;
+
+  @IsOptional()
+  @IsIn(['newest', 'name_asc'])
+  sort?: 'newest' | 'name_asc';
 
   @IsOptional()
   @Type(() => Number)

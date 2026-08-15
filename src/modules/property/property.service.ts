@@ -24,7 +24,7 @@ export class PropertyService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  /** Public — chỉ Property đã APPROVED. */
+  /** Public — chỉ Property đã APPROVED, kèm fromPrice (giá thấp nhất trong các Room ACTIVE). */
   async list(query: ListPropertiesDto) {
     const { page, limit, skip, take } = resolvePagination(query);
 
@@ -35,8 +35,19 @@ export class PropertyService {
       ...(query.destinationId && { destinationId: BigInt(query.destinationId) }),
     };
 
-    const [items, totalItems] = await this.propertyRepository.findMany(where, skip, take);
-    return buildPaginated(items, totalItems, page, limit);
+    const orderBy: Prisma.PropertyOrderByWithRelationInput =
+      query.sort === 'name_asc' ? { name: 'asc' } : { createdAt: 'desc' };
+
+    const [items, totalItems] = await this.propertyRepository.findMany(where, skip, take, orderBy);
+    const minPrices = await this.propertyRepository.findMinPricesByPropertyIds(
+      items.map((item) => item.id),
+    );
+    const itemsWithPrice = items.map((item) => ({
+      ...item,
+      fromPrice: minPrices.get(item.id)?.toString() ?? null,
+    }));
+
+    return buildPaginated(itemsWithPrice, totalItems, page, limit);
   }
 
   async getBySlug(slug: string) {
