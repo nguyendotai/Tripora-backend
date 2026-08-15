@@ -10,5 +10,6 @@ import { TourBookingService } from './tour-booking.service';
   imports: [TourModule, TourScheduleModule, ProviderModule],
   controllers: [TourBookingController],
   providers: [TourBookingService, TourBookingRepository],
+  exports: [TourBookingRepository],
 })
 export class TourBookingModule {}
