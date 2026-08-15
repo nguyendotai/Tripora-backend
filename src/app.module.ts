@@ -13,6 +13,7 @@ import { RoomModule } from './modules/room/room.module';
 import { RoomInventoryModule } from './modules/room-inventory/room-inventory.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { UserModule } from './modules/user/user.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { ReviewModule } from './modules/review/review.module';
@@ -36,6 +37,7 @@ import { ReviewModule } from './modules/review/review.module';
     RoomModule,
     RoomInventoryModule,
     BookingModule,
+    UploadModule,
   ],
   controllers: [],
   providers: [],
