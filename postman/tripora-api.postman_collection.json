@@ -1363,6 +1363,25 @@
           }
         },
         {
+          "name": "My Bookings (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/provider?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "provider"],
+              "query": [
+                { "key": "status", "value": "upcoming", "description": "Bo trong = tat ca. upcoming | completed | cancelled" },
+                { "key": "propertyId", "value": "1", "disabled": true, "description": "Loc theo 1 khach san cu the neu Provider co nhieu khach san" }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co ho so Provider da APPROVED (403 neu khong). Xem Booking cua tat ca Room thuoc cac Property minh so huu (khong phai Booking minh tu dat voi tu cach khach hang — dung /bookings/mine cho truong hop do)."
+          }
+        },
+        {
           "name": "My Bookings",
           "request": {
             "method": "GET",

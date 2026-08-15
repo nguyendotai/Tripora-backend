@@ -5,14 +5,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, PropertyStatus, Prisma, RoomStatus } from '@prisma/client';
+import { BookingStatus, PropertyStatus, Prisma, ProviderStatus, RoomStatus } from '@prisma/client';
 import { PropertyRepository } from '../property/property.repository';
+import { ProviderRepository } from '../provider/provider.repository';
 import { RoomInventoryRepository } from '../room-inventory/room-inventory.repository';
 import { RoomRepository } from '../room/room.repository';
 import { BookingRepository } from './booking.repository';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ListAllBookingsDto } from './dto/list-all-bookings.dto';
+import { ListProviderBookingsDto } from './dto/list-provider-bookings.dto';
 import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 
 const MAX_NIGHTS = 30;
@@ -24,6 +26,7 @@ export class BookingService {
     private readonly roomRepository: RoomRepository,
     private readonly propertyRepository: PropertyRepository,
     private readonly roomInventoryRepository: RoomInventoryRepository,
+    private readonly providerRepository: ProviderRepository,
   ) {}
 
   /** Public — xem còn phòng không + báo giá trước khi nhập Guest Information. */
@@ -111,6 +114,22 @@ export class BookingService {
   listMine(userId: bigint, status?: 'upcoming' | 'completed' | 'cancelled') {
     const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
     return this.bookingRepository.findManyByUser(userId, status, today);
+  }
+
+  /** Provider — xem Booking cua cac khach san minh so huu, optional loc theo 1 Property. */
+  async listMineAsProvider(userId: bigint, query: ListProviderBookingsDto) {
+    const provider = await this.providerRepository.findByUserId(userId);
+    if (!provider || provider.status !== ProviderStatus.APPROVED) {
+      throw new ForbiddenException('You need an approved provider profile to do this');
+    }
+
+    const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    return this.bookingRepository.findManyByProvider(
+      provider.id,
+      query.propertyId ? BigInt(query.propertyId) : undefined,
+      query.status,
+      today,
+    );
   }
 
   /** Chi huy duoc booking CONFIRMED cua chinh minh va checkInDate chua toi. */

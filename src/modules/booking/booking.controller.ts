@@ -11,6 +11,7 @@ import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ListAllBookingsDto } from './dto/list-all-bookings.dto';
 import { ListMyBookingsDto } from './dto/list-my-bookings.dto';
+import { ListProviderBookingsDto } from './dto/list-provider-bookings.dto';
 
 @ApiTags('Booking')
 @Controller('bookings')
@@ -35,6 +36,16 @@ export class BookingController {
   @UseGuards(JwtAuthGuard)
   listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ListMyBookingsDto) {
     return this.bookingService.listMine(BigInt(user.id), query.status);
+  }
+
+  @Get('provider')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listMineAsProvider(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListProviderBookingsDto,
+  ) {
+    return this.bookingService.listMineAsProvider(BigInt(user.id), query);
   }
 
   @Post()
