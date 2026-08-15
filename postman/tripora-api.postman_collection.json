@@ -1455,6 +1455,32 @@
           }
         }
       ]
+    },
+    {
+      "name": "Upload",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/uploads/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "image"]
+            },
+            "description": "Yeu cau dang nhap (bat ky USER nao). Multipart/form-data, field 'file'. Chi nhan jpg/jpeg/png/webp, toi da 5MB (400 neu vi pham). Upload len Cloudinary (folder 'tripora'), tra ve { url }. Dung chung cho moi noi can anh (Property/Room images, Provider logo...), khong rieng cho 1 entity nao."
+          }
+        }
+      ]
     }
   ]
 }
