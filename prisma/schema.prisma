@@ -36,6 +36,7 @@ model User {
   trips              Trip[]
   notifications      Notification[]
   provider           Provider?
+  tourGuide          TourGuide?
   bookings           HotelBooking[]
   tourBookings       TourBooking[]
   experienceBookings ExperienceBooking[]
@@ -240,6 +241,7 @@ model Provider {
   properties  Property[]
   tours       Tour[]
   experiences Experience[]
+  tourGuides  TourGuide[]
 
   @@map("providers")
 }
@@ -429,14 +431,49 @@ model TourSchedule {
   available     Int
   booked        Int      @default(0)
   price         Decimal? @db.Decimal(10, 2)
+  guideId       BigInt?  @map("guide_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  tour Tour @relation(fields: [tourId], references: [id])
+  tour  Tour       @relation(fields: [tourId], references: [id])
+  guide TourGuide? @relation(fields: [guideId], references: [id])
 
   @@unique([tourId, departureDate])
   @@index([tourId])
+  @@index([guideId])
   @@map("tour_schedules")
+}
+
+// Guide van la Role.USER (khong them Role enum/bang roles-permissions moi, dung tinh than
+// backend/CLAUDE.md muc 4 "khong tao bang roles/permissions chi tiet truoc khi can") — chi la 1 profile
+// TourGuide gan voi 1 User da dang ky san, do Tour Operator tao (nhap email User co san, khong co luong
+// tu apply nhu Provider vi Guide la "nhan vien" cua Operator chu khong tu dang ky). 1 User toi da 1 ho so
+// Guide (userId unique), thuoc dung 1 Tour Operator — chua ho tro 1 Guide lam cho nhieu Operator.
+// Hard delete (khong soft-delete) — cung ly do da doi TourItinerary sang hard delete o vong truoc:
+// unique(userId) cua MySQL van tinh ca ban ghi soft-delete, khien xoa roi them lai cung email bi loi
+// unique constraint that 500 thay vi tao lai duoc. Khong bang nao tham chieu nguoc TourGuide can giu
+// lich su (TourSchedule.guideId duoc go ve null truoc khi xoa — xem TourGuideService.remove).
+model TourGuide {
+  id         BigInt          @id @default(autoincrement())
+  providerId BigInt          @map("provider_id")
+  userId     BigInt          @unique @map("user_id")
+  bio        String?         @db.Text
+  phone      String?
+  status     TourGuideStatus @default(ACTIVE)
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  provider  Provider       @relation(fields: [providerId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
+  schedules TourSchedule[]
+
+  @@index([providerId])
+  @@map("tour_guides")
+}
+
+enum TourGuideStatus {
+  ACTIVE
+  INACTIVE
 }
 
 // Lich trinh theo ngay cua 1 Tour — khong co status rieng, an/hien theo Tour cha (giong Room theo Property).

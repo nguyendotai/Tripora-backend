@@ -1603,6 +1603,159 @@
       ]
     },
     {
+      "name": "Tour Guide",
+      "item": [
+        {
+          "name": "Create Guide (Tour Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"guide@example.com\",\n  \"bio\": \"5 nam kinh nghiem dan tour mien Bac\",\n  \"phone\": \"0900000099\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TOUR APPROVED. `email` phai la 1 tai khoan Tripora da dang ky san (khong tu tao tai khoan moi) va chua la Guide o dau khac (409 neu da la Guide)."
+          }
+        },
+        {
+          "name": "List My Guides (Tour Operator)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", "mine"]
+            },
+            "description": "Danh sach Guide thuoc Provider dang dang nhap, kem email/ten tai khoan."
+          }
+        },
+        {
+          "name": "Update Guide (Tour Operator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Cap nhat gioi thieu\",\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi Operator so huu Guide nay. status INACTIVE = tam an khoi danh sach gan cho lich khoi hanh moi."
+          }
+        },
+        {
+          "name": "Delete Guide (Tour Operator)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Soft delete. Chi Operator so huu Guide nay."
+          }
+        },
+        {
+          "name": "Assign Guide To Schedule (Tour Operator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"1\",\n  \"guideId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", "assign"]
+            },
+            "description": "Gan 1 Guide cho 1 ngay khoi hanh (TourSchedule) cu the. Bo trong `guideId` (hoac gui rong) de go phan cong. Ca schedule va guide phai thuoc dung Provider dang dang nhap."
+          }
+        },
+        {
+          "name": "Get My Guide Profile (Guide)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", "me"]
+            },
+            "description": "404 neu tai khoan dang nhap chua duoc Tour Operator nao them lam Guide."
+          }
+        },
+        {
+          "name": "Update My Guide Profile (Guide)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Tu gioi thieu ban than\",\n  \"phone\": \"0900000098\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", "me"]
+            },
+            "description": "Guide tu sua bio/phone cua chinh minh — khong sua duoc status (Operator kiem soat)."
+          }
+        },
+        {
+          "name": "List My Assigned Schedules (Guide)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/me/schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", "me", "schedules"]
+            },
+            "description": "Cac ngay khoi hanh (TourSchedule) minh duoc phan cong, kem thong tin Tour cha — gop chung 'Assigned Tours' + 'Schedule' cua Guide Dashboard vi cung 1 du lieu."
+          }
+        },
+        {
+          "name": "List Travelers Of A Schedule (Guide)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tour-guides/me/schedules/:scheduleId/travelers",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-guides", "me", "schedules", ":scheduleId", "travelers"],
+              "variable": [{ "key": "scheduleId", "value": "1" }]
+            },
+            "description": "Danh sach khach da xac nhan (CONFIRMED) cho 1 ngay khoi hanh minh duoc phan cong. 403 neu ngay khoi hanh do khong phan cong cho minh."
+          }
+        }
+      ]
+    },
+    {
       "name": "Experience",
       "item": [
         {
