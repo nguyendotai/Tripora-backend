@@ -1,16 +1,19 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PropertyStatus, Prisma, RoomStatus } from '@prisma/client';
+import { BookingStatus, PropertyStatus, Prisma, RoomStatus } from '@prisma/client';
 import { PropertyRepository } from '../property/property.repository';
 import { RoomInventoryRepository } from '../room-inventory/room-inventory.repository';
 import { RoomRepository } from '../room/room.repository';
 import { BookingRepository } from './booking.repository';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ListAllBookingsDto } from './dto/list-all-bookings.dto';
+import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 
 const MAX_NIGHTS = 30;
 
@@ -93,6 +96,49 @@ export class BookingService {
     return result.booking;
   }
 
+  /** Admin — xem toan bo Booking, filter theo status (CONFIRMED/CANCELLED). */
+  async listAll(query: ListAllBookingsDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+    const where: Prisma.HotelBookingWhereInput = {
+      ...(query.status && { status: query.status }),
+    };
+
+    const [items, totalItems] = await this.bookingRepository.findAll(where, skip, take);
+    return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** My Bookings — status? = upcoming | completed | cancelled (bo trong la tat ca). */
+  listMine(userId: bigint, status?: 'upcoming' | 'completed' | 'cancelled') {
+    const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    return this.bookingRepository.findManyByUser(userId, status, today);
+  }
+
+  /** Chi huy duoc booking CONFIRMED cua chinh minh va checkInDate chua toi. */
+  async cancel(userId: bigint, bookingId: bigint) {
+    const booking = await this.bookingRepository.findById(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.userId !== userId) {
+      throw new ForbiddenException('You do not own this booking');
+    }
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      throw new BadRequestException('This booking is already cancelled');
+    }
+
+    const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    if (booking.checkInDate <= today) {
+      throw new BadRequestException('Cannot cancel a booking that has already started');
+    }
+
+    const dates = this.enumerateNights(booking.checkInDate, booking.checkOutDate);
+    const result = await this.bookingRepository.cancelBooking(bookingId, booking.roomId, dates);
+    if (!result.ok) {
+      throw new BadRequestException('This booking is already cancelled');
+    }
+    return result.booking;
+  }
+
   /** Room phải ACTIVE và Property cha phải APPROVED — cùng luật public như Room/Room Inventory. */
   private async getBookableRoom(roomId: bigint) {
     const room = await this.roomRepository.findById(roomId);
@@ -118,13 +164,17 @@ export class BookingService {
       throw new BadRequestException(`Stay length cannot exceed ${MAX_NIGHTS} nights`);
     }
 
+    return { checkInDate, checkOutDate, nights, dates: this.enumerateNights(checkInDate, checkOutDate) };
+  }
+
+  private enumerateNights(checkInDate: Date, checkOutDate: Date): Date[] {
+    const nights = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000));
     const dates: Date[] = [];
     for (let i = 0; i < nights; i += 1) {
       const date = new Date(checkInDate);
       date.setUTCDate(date.getUTCDate() + i);
       dates.push(date);
     }
-
-    return { checkInDate, checkOutDate, nights, dates };
+    return dates;
   }
 }
