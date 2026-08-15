@@ -145,7 +145,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Trip\",\n  \"lastName\": \"Updated\"\n}"
+              "raw": "{\n  \"firstName\": \"Trip\",\n  \"lastName\": \"Updated\",\n  \"avatar\": \"https://res.cloudinary.com/ppepaqpg/image/upload/tripora/avatar.jpg\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/me",
