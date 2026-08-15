@@ -14,6 +14,7 @@ import { RoomInventoryModule } from './modules/room-inventory/room-inventory.mod
 import { TourModule } from './modules/tour/tour.module';
 import { TourItineraryModule } from './modules/tour-itinerary/tour-itinerary.module';
 import { TourScheduleModule } from './modules/tour-schedule/tour-schedule.module';
+import { TourBookingModule } from './modules/tour-booking/tour-booking.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -44,6 +45,7 @@ import { ReviewModule } from './modules/review/review.module';
     TourModule,
     TourItineraryModule,
     TourScheduleModule,
+    TourBookingModule,
   ],
   controllers: [],
   providers: [],

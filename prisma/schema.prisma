@@ -37,6 +37,7 @@ model User {
   notifications Notification[]
   provider      Provider?
   bookings      HotelBooking[]
+  tourBookings  TourBooking[]
 
   @@map("users")
 }
@@ -407,6 +408,7 @@ model Tour {
   destination Destination?    @relation(fields: [destinationId], references: [id])
   itineraries TourItinerary[]
   schedules   TourSchedule[]
+  bookings    TourBooking[]
 
   @@index([providerId])
   @@index([destinationId])
@@ -453,4 +455,32 @@ model TourItinerary {
   @@unique([tourId, dayNumber])
   @@index([tourId])
   @@map("tour_itineraries")
+}
+
+// Tour Booking — 1 khach hang dat N cho cho 1 ngay khoi hanh cu the (khac Hotel Booking dat theo
+// khoang ngay + danh sach Guest co ten). "Customer Info" o day la 1 nguoi lien he duy nhat, khong
+// phai danh sach khach nhu Guest cua Hotel — dung theo dung wording checklist "Number of People ->
+// Customer Info". Tai su dung BookingStatus da co (CONFIRMED/CANCELLED) thay vi tao enum rieng.
+model TourBooking {
+  id             BigInt        @id @default(autoincrement())
+  userId         BigInt        @map("user_id")
+  tourId         BigInt        @map("tour_id")
+  tourTitle      String        @map("tour_title")
+  departureDate  DateTime      @db.Date @map("departure_date")
+  numberOfPeople Int           @map("number_of_people")
+  customerName   String        @map("customer_name")
+  customerEmail  String?       @map("customer_email")
+  customerPhone  String?       @map("customer_phone")
+  totalPrice     Decimal       @db.Decimal(10, 2) @map("total_price")
+  currency       String        @default("VND")
+  status         BookingStatus @default(CONFIRMED)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+  tour Tour @relation(fields: [tourId], references: [id])
+
+  @@index([userId])
+  @@index([tourId])
+  @@map("tour_bookings")
 }
