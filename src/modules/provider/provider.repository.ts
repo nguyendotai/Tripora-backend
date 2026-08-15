@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Provider, ProviderStatus } from '@prisma/client';
+import { Prisma, Provider, ProviderStatus, ProviderType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
@@ -34,6 +34,7 @@ export class ProviderRepository {
   create(data: {
     userId: bigint;
     name: string;
+    type?: ProviderType;
     description?: string;
     logo?: string;
     contact?: string;
@@ -41,6 +42,7 @@ export class ProviderRepository {
     return this.prisma.provider.create({
       data: {
         name: data.name,
+        type: data.type,
         description: data.description,
         logo: data.logo,
         contact: data.contact,
