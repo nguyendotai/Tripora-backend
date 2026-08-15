@@ -12,6 +12,7 @@ import { ReportModule } from './modules/report/report.module';
 import { RoomModule } from './modules/room/room.module';
 import { RoomInventoryModule } from './modules/room-inventory/room-inventory.module';
 import { TourModule } from './modules/tour/tour.module';
+import { TourItineraryModule } from './modules/tour-itinerary/tour-itinerary.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -40,6 +41,7 @@ import { ReviewModule } from './modules/review/review.module';
     BookingModule,
     UploadModule,
     TourModule,
+    TourItineraryModule,
   ],
   controllers: [],
   providers: [],
