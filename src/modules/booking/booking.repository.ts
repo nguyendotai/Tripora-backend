@@ -103,6 +103,27 @@ export class BookingRepository {
     return this.prisma.hotelBooking.findUnique({ where: { id } });
   }
 
+  /** Admin — xem toan bo Booking cua moi User. */
+  async findAll(
+    where: Prisma.HotelBookingWhereInput,
+    skip: number,
+    take: number,
+  ): Promise<[(HotelBooking & { guests: Guest[]; user: { email: string; firstName: string | null; lastName: string | null } })[], number]> {
+    return this.prisma.$transaction([
+      this.prisma.hotelBooking.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          guests: true,
+          user: { select: { email: true, firstName: true, lastName: true } },
+        },
+      }),
+      this.prisma.hotelBooking.count({ where }),
+    ]);
+  }
+
   findManyByUser(
     userId: bigint,
     filter: 'upcoming' | 'completed' | 'cancelled' | undefined,

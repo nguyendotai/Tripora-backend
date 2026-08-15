@@ -12,6 +12,8 @@ import { RoomRepository } from '../room/room.repository';
 import { BookingRepository } from './booking.repository';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ListAllBookingsDto } from './dto/list-all-bookings.dto';
+import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 
 const MAX_NIGHTS = 30;
 
@@ -92,6 +94,17 @@ export class BookingService {
     }
 
     return result.booking;
+  }
+
+  /** Admin — xem toan bo Booking, filter theo status (CONFIRMED/CANCELLED). */
+  async listAll(query: ListAllBookingsDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+    const where: Prisma.HotelBookingWhereInput = {
+      ...(query.status && { status: query.status }),
+    };
+
+    const [items, totalItems] = await this.bookingRepository.findAll(where, skip, take);
+    return buildPaginated(items, totalItems, page, limit);
   }
 
   /** My Bookings — status? = upcoming | completed | cancelled (bo trong la tat ca). */
