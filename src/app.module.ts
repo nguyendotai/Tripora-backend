@@ -15,6 +15,7 @@ import { TourModule } from './modules/tour/tour.module';
 import { TourItineraryModule } from './modules/tour-itinerary/tour-itinerary.module';
 import { TourScheduleModule } from './modules/tour-schedule/tour-schedule.module';
 import { TourBookingModule } from './modules/tour-booking/tour-booking.module';
+import { TourGuideModule } from './modules/tour-guide/tour-guide.module';
 import { ExperienceModule } from './modules/experience/experience.module';
 import { ExperienceScheduleModule } from './modules/experience-schedule/experience-schedule.module';
 import { ExperienceBookingModule } from './modules/experience-booking/experience-booking.module';
@@ -49,6 +50,7 @@ import { ReviewModule } from './modules/review/review.module';
     TourItineraryModule,
     TourScheduleModule,
     TourBookingModule,
+    TourGuideModule,
     ExperienceModule,
     ExperienceScheduleModule,
     ExperienceBookingModule,
