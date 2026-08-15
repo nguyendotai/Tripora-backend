@@ -10,5 +10,6 @@ import { RoomInventoryService } from './room-inventory.service';
   imports: [RoomModule, PropertyModule, ProviderModule],
   controllers: [RoomInventoryController],
   providers: [RoomInventoryService, RoomInventoryRepository],
+  exports: [RoomInventoryRepository],
 })
 export class RoomInventoryModule {}
