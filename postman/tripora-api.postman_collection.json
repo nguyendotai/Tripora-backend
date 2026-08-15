@@ -938,7 +938,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["providers", "apply"]
             },
-            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). `type` tuy chon: HOTEL (mac dinh, V2) hoac TOUR (V3, de tao Tour) — ACTIVITY/TRANSPORT/FLIGHT du co trong enum nhung chua co domain nao dung toi. Trang thai ban dau PENDING."
+            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). `type` tuy chon: HOTEL (mac dinh, V2), TOUR (V3, de tao Tour), hoac ACTIVITY (V3, de tao Experience) — TRANSPORT/FLIGHT du co trong enum nhung chua co domain nao dung toi. Trang thai ban dau PENDING."
           }
         },
         {
@@ -1598,6 +1598,331 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Experience",
+      "item": [
+        {
+          "name": "List Experiences (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/experiences?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "destinationId", "value": "", "disabled": true },
+                { "key": "sort", "value": "newest", "disabled": true, "description": "newest (mac dinh) | title_asc" }
+              ]
+            },
+            "description": "Public. Chi tra Experience da APPROVED."
+          }
+        },
+        {
+          "name": "Get Experience by Slug (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/experiences/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", ":slug"],
+              "variable": [{ "key": "slug", "value": "lop-hoc-nau-an-hoi-an" }]
+            },
+            "description": "Public. 404 neu khong ton tai hoac chua APPROVED."
+          }
+        },
+        {
+          "name": "List My Experiences (Experience Operator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experiences/mine?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", "mine"],
+              "query": [{ "key": "status", "value": "PENDING", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=ACTIVITY va APPROVED (403 neu khong)."
+          }
+        },
+        {
+          "name": "List Experiences For Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experiences/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Create Experience",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lop hoc nau an Hoi An\",\n  \"destinationId\": \"1\",\n  \"description\": \"Trai nghiem nau cac mon an dac san Hoi An\",\n  \"durationLabel\": \"3 gio\",\n  \"price\": \"500000\",\n  \"maxParticipants\": 10,\n  \"included\": \"Nguyen lieu, dung cu, 1 bua an\",\n  \"excluded\": \"Do uong\",\n  \"cancellationPolicy\": \"Huy truoc 1 ngay hoan 100%\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/experiences",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=ACTIVITY va APPROVED (403 neu khong). Trang thai ban dau PENDING."
+          }
+        },
+        {
+          "name": "Update Experience",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Cap nhat mo ta\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/experiences/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu moi duoc sua."
+          }
+        },
+        {
+          "name": "Delete Experience",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experiences/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu moi duoc xoa. Soft delete (204 No Content)."
+          }
+        },
+        {
+          "name": "Review Experience (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/experiences/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Experience Schedule",
+      "item": [
+        {
+          "name": "List Experience Schedule (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/experience-schedules?experienceId=1&startDate=2026-09-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-schedules"],
+              "query": [
+                { "key": "experienceId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-30" }
+              ]
+            },
+            "description": "Public. Chi tra ve neu Experience cha da APPROVED."
+          }
+        },
+        {
+          "name": "List My Experience Schedule (Experience Operator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experience-schedules/mine?experienceId=1&startDate=2026-09-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-schedules", "mine"],
+              "query": [
+                { "key": "experienceId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-30" }
+              ]
+            },
+            "description": "Yeu cau dang nhap + so huu Experience do."
+          }
+        },
+        {
+          "name": "Set Experience Schedule (bulk theo khoang ngay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"experienceId\": \"1\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-07\",\n  \"capacity\": 10,\n  \"price\": 500000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/experience-schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-schedules"]
+            },
+            "description": "Yeu cau dang nhap + so huu Experience. Upsert theo tung ngay trong khoang, chan ha capacity xuong duoi so booked."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Experience Booking",
+      "item": [
+        {
+          "name": "Check Experience Availability (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings/availability?experienceId=1&departureDate=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings", "availability"],
+              "query": [
+                { "key": "experienceId", "value": "1" },
+                { "key": "departureDate", "value": "2026-09-05" }
+              ]
+            },
+            "description": "Public, khong can dang nhap."
+          }
+        },
+        {
+          "name": "List All Experience Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "CONFIRMED", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "List My Experience Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings/mine?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings", "mine"],
+              "query": [{ "key": "status", "value": "upcoming", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap. Chi booking cua chinh minh."
+          }
+        },
+        {
+          "name": "List Experience Bookings (Experience Operator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings/provider?experienceId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings", "provider"],
+              "query": [
+                { "key": "experienceId", "value": "1", "disabled": true },
+                { "key": "status", "value": "upcoming", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=ACTIVITY APPROVED."
+          }
+        },
+        {
+          "name": "Create Experience Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"experienceId\": \"1\",\n  \"departureDate\": \"2026-09-05\",\n  \"numberOfPeople\": 2,\n  \"customerName\": \"Nguyen Van A\",\n  \"customerEmail\": \"a@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings"]
+            },
+            "description": "Yeu cau dang nhap. Tru `available`/cong `booked` atomic. 400 neu chua mo lich, 409 neu khong du cho."
+          }
+        },
+        {
+          "name": "Cancel Experience Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings", ":id", "cancel"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu booking, chi khi con CONFIRMED va departureDate chua toi."
           }
         }
       ]
