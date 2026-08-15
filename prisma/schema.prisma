@@ -406,10 +406,32 @@ model Tour {
   provider    Provider        @relation(fields: [providerId], references: [id])
   destination Destination?    @relation(fields: [destinationId], references: [id])
   itineraries TourItinerary[]
+  schedules   TourSchedule[]
 
   @@index([providerId])
   @@index([destinationId])
   @@map("tours")
+}
+
+// Ngay khoi hanh cua 1 Tour, kem suc chua — cung mo hinh 3 cot total/available/booked
+// nhu RoomInventory (V2), de san sang cho decrement atomic khi lam Tour Booking (vong sau):
+// UPDATE tour_schedules SET available = available - :qty, booked = booked + :qty WHERE ... AND available >= :qty.
+model TourSchedule {
+  id            BigInt   @id @default(autoincrement())
+  tourId        BigInt   @map("tour_id")
+  departureDate DateTime @db.Date @map("departure_date")
+  capacity      Int
+  available     Int
+  booked        Int      @default(0)
+  price         Decimal? @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tour Tour @relation(fields: [tourId], references: [id])
+
+  @@unique([tourId, departureDate])
+  @@index([tourId])
+  @@map("tour_schedules")
 }
 
 // Lich trinh theo ngay cua 1 Tour — khong co status rieng, an/hien theo Tour cha (giong Room theo Property).
