@@ -1341,6 +1341,40 @@
             },
             "description": "Yeu cau dang nhap (bat ky USER nao, khong can Provider). Tru availableRooms atomic tung dem trong 1 transaction (UPDATE ... WHERE available_rooms >= 1) — 409 neu het phong 1 trong cac ngay, 400 neu ngay do Provider chua mo ban ton kho hoac so guests vuot capacity cua Room. Booking luu snapshot propertyName/roomName/totalPrice tai thoi diem dat, khong bao gio join nguoc lay gia hien thi."
           }
+        },
+        {
+          "name": "My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/mine?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "mine"],
+              "query": [
+                { "key": "status", "value": "upcoming", "description": "Bo trong = tat ca. upcoming | completed | cancelled" }
+              ]
+            },
+            "description": "Yeu cau dang nhap. Chi tra booking cua chinh minh. upcoming/completed tinh tu checkOutDate so voi hom nay (khong luu status rieng, tranh can cron) — status DB chi co CONFIRMED/CANCELLED."
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", ":id", "cancel"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau dang nhap + la chu booking (403 neu khong). 400 neu booking da CANCELLED hoac checkInDate da toi/qua (khong huy duoc booking dang o/da o). Hoan tra availableRooms/bookedRooms atomic tung dem cung 1 transaction voi viec chuyen status -> CANCELLED."
+          }
         }
       ]
     }
