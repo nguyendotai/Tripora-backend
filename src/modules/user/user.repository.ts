@@ -25,7 +25,7 @@ export class UserRepository {
 
   updateProfile(
     id: bigint,
-    data: { firstName?: string; lastName?: string },
+    data: { firstName?: string; lastName?: string; avatar?: string },
   ): Promise<User> {
     return this.prisma.user.update({ where: { id }, data });
   }
