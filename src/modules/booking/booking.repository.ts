@@ -143,7 +143,12 @@ export class BookingRepository {
     propertyId: bigint | undefined,
     filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
     today: Date,
-  ): Promise<(HotelBooking & { guests: Guest[] })[]> {
+  ): Promise<
+    (HotelBooking & {
+      guests: Guest[];
+      user: { email: string; firstName: string | null; lastName: string | null };
+    })[]
+  > {
     const where = this.applyStatusFilter(
       {
         property: { providerId },
@@ -154,7 +159,10 @@ export class BookingRepository {
     );
     return this.prisma.hotelBooking.findMany({
       where,
-      include: { guests: true },
+      include: {
+        guests: true,
+        user: { select: { email: true, firstName: true, lastName: true } },
+      },
       orderBy: { checkInDate: 'desc' },
     });
   }
