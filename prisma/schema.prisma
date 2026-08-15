@@ -403,10 +403,32 @@ model Tour {
   updatedAt          DateTime   @updatedAt @map("updated_at")
   deletedAt          DateTime?  @map("deleted_at")
 
-  provider    Provider     @relation(fields: [providerId], references: [id])
-  destination Destination? @relation(fields: [destinationId], references: [id])
+  provider    Provider        @relation(fields: [providerId], references: [id])
+  destination Destination?    @relation(fields: [destinationId], references: [id])
+  itineraries TourItinerary[]
 
   @@index([providerId])
   @@index([destinationId])
   @@map("tours")
+}
+
+// Lich trinh theo ngay cua 1 Tour — khong co status rieng, an/hien theo Tour cha (giong Room theo Property).
+// Hard delete (khong soft-delete) — giong TripDay: khong entity nao tham chieu nguoc 1 ngay lich trinh,
+// va dayNumber tu tang dua tren ngay con lai nen soft-delete se dam vao unique(tourId, dayNumber) cua ban ghi cu.
+model TourItinerary {
+  id         BigInt   @id @default(autoincrement())
+  tourId     BigInt   @map("tour_id")
+  dayNumber  Int      @map("day_number")
+  title      String
+  activities String?  @db.Text
+  meals      String?  @db.Text
+  locations  String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tour Tour @relation(fields: [tourId], references: [id])
+
+  @@unique([tourId, dayNumber])
+  @@index([tourId])
+  @@map("tour_itineraries")
 }

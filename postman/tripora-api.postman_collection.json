@@ -1335,6 +1335,98 @@
       ]
     },
     {
+      "name": "Tour Itinerary",
+      "item": [
+        {
+          "name": "List Tour Itinerary (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tour-itineraries?tourId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-itineraries"],
+              "query": [{ "key": "tourId", "value": "1" }]
+            },
+            "description": "Public. Chi tra ve neu Tour cha da APPROVED (404 neu khong). Sap xep theo dayNumber tang dan."
+          }
+        },
+        {
+          "name": "List My Tour Itinerary (Tour Operator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tour-itineraries/mine?tourId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-itineraries", "mine"],
+              "query": [{ "key": "tourId", "value": "1" }]
+            },
+            "description": "Yeu cau dang nhap + so huu Tour do (Provider type=TOUR APPROVED). Tra ve bat ke Tour da duyet hay chua."
+          }
+        },
+        {
+          "name": "Create Tour Itinerary Day",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tourId\": \"1\",\n  \"title\": \"Den Da Lat, nhan phong\",\n  \"activities\": \"Tham quan Ho Xuan Huong, cho dem Da Lat\",\n  \"meals\": \"Toi\",\n  \"locations\": \"Ho Xuan Huong, Cho Da Lat\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-itineraries",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-itineraries"]
+            },
+            "description": "Yeu cau dang nhap + so huu Tour. `dayNumber` tu dong tang (khong nhan tu client, giong TripDay) — luon la ngay tiep theo trong Tour do."
+          }
+        },
+        {
+          "name": "Update Tour Itinerary Day",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cap nhat tieu de ngay 1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tour-itineraries/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-itineraries", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu Tour moi duoc sua. Khong sua duoc dayNumber."
+          }
+        },
+        {
+          "name": "Delete Tour Itinerary Day",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tour-itineraries/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-itineraries", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu so huu moi duoc xoa. Soft delete (204 No Content)."
+          }
+        }
+      ]
+    },
+    {
       "name": "Room",
       "item": [
         {
