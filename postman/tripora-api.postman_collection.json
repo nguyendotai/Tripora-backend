@@ -3354,6 +3354,94 @@
       ]
     },
     {
+      "name": "Flight Booking",
+      "item": [
+        {
+          "name": "List All Flight Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flight-bookings?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "CONFIRMED", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau role ADMIN. Phan trang, filter status tuy chon (CONFIRMED/CANCELLED)."
+          }
+        },
+        {
+          "name": "List My Flight Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flight-bookings/mine?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-bookings", "mine"],
+              "query": [{ "key": "status", "value": "upcoming", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap. Chi booking cua chinh minh, kem Passenger tren tung ghe da dat (dung lam du lieu E-ticket). status tuy chon: upcoming/completed/cancelled (bo trong la tat ca)."
+          }
+        },
+        {
+          "name": "List Flight Bookings (Airline Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flight-bookings/provider?flightId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-bookings", "provider"],
+              "query": [
+                { "key": "flightId", "value": "1", "disabled": true },
+                { "key": "status", "value": "upcoming", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=FLIGHT APPROVED (403 neu khong). Booking cua cac Flight minh so huu, tuy chon loc theo 1 flightId."
+          }
+        },
+        {
+          "name": "Create Flight Booking (Passenger Info -> Booking -> E-ticket)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"1\",\n  \"seatIds\": [\"1\", \"2\"],\n  \"passengers\": [\n    { \"fullName\": \"Nguyen Van A\", \"idNumber\": \"001201012345\" },\n    { \"fullName\": \"Nguyen Thi B\", \"idNumber\": \"001201054321\" }\n  ],\n  \"customerName\": \"Nguyen Van A\",\n  \"customerEmail\": \"a@example.com\",\n  \"customerPhone\": \"0900000001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flight-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-bookings"]
+            },
+            "description": "Yeu cau dang nhap (bat ky USER nao). seatIds lay tu GET /flight-seats (buoc Select Seat) — moi seatId ung voi 1 passenger cung vi tri trong mang. Flip tung dong FlightSeat AVAILABLE->BOOKED atomic trong 1 transaction (409 neu 1 trong cac ghe khong con AVAILABLE — SOLD_OUT), 400 neu chon ghe BUSINESS ma lich bay chua co businessPrice. totalPrice tinh tu economyPrice/businessPrice cua FlightSchedule tai thoi diem dat (snapshot). Response (kem passengers) chinh la du lieu E-ticket, xem lai duoc qua GET /flight-bookings/mine."
+          }
+        },
+        {
+          "name": "Cancel Flight Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flight-bookings/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-bookings", ":id", "cancel"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan tra tung ghe da dat ve AVAILABLE atomic."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
