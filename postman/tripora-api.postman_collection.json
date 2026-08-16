@@ -3128,6 +3128,213 @@
       ]
     },
     {
+      "name": "Flight",
+      "item": [
+        {
+          "name": "List Flights (Public, Search)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flights?departureAirportId=1&arrivalAirportId=2&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights"],
+              "query": [
+                { "key": "departureAirportId", "value": "1" },
+                { "key": "arrivalAirportId", "value": "2" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Public. Chi thay Flight da APPROVED. Dung cho buoc Search (VD SGN -> HAN qua id 2 san bay)."
+          }
+        },
+        {
+          "name": "Get Flight by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flights/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Public. 404 neu chua APPROVED/khong ton tai."
+          }
+        },
+        {
+          "name": "List My Flights (Airline)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flights/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights", "mine"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "PENDING", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=FLIGHT APPROVED."
+          }
+        },
+        {
+          "name": "List Flights for Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flights/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Create Flight (Airline)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aircraftId\": \"1\",\n  \"flightNumber\": \"VN204\",\n  \"departureAirportId\": \"1\",\n  \"arrivalAirportId\": \"2\",\n  \"duration\": 130\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flights",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=FLIGHT APPROVED. `aircraftId` phai thuoc chinh Provider nay va da APPROVED. `departureAirportId`/`arrivalAirportId` phai khac nhau va ton tai. Flight moi luon PENDING, can Admin duyet truoc khi cong khai. `duration` tinh bang phut."
+          }
+        },
+        {
+          "name": "Update Flight (Airline)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 125\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flights/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu Flight."
+          }
+        },
+        {
+          "name": "Delete Flight (Airline)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flights/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Soft delete. Chi chu Flight."
+          }
+        },
+        {
+          "name": "Review Flight (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flights/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["flights", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flight Schedule",
+      "item": [
+        {
+          "name": "List Flight Schedule (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flight-schedules?flightId=1&startDate=2026-09-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-schedules"],
+              "query": [
+                { "key": "flightId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-30" }
+              ]
+            },
+            "description": "Public. Chi tra ve neu Flight da APPROVED."
+          }
+        },
+        {
+          "name": "List My Flight Schedule (Airline)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flight-schedules/mine?flightId=1&startDate=2026-09-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-schedules", "mine"],
+              "query": [
+                { "key": "flightId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-30" }
+              ]
+            },
+            "description": "Yeu cau dang nhap + so huu Flight do."
+          }
+        },
+        {
+          "name": "Set Flight Schedule (bulk theo khoang ngay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": \"1\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-07\",\n  \"departureTime\": \"08:30\",\n  \"arrivalTime\": \"10:45\",\n  \"economyPrice\": 1200000,\n  \"businessPrice\": 3500000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flight-schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-schedules"]
+            },
+            "description": "Yeu cau dang nhap + so huu Flight. Upsert theo tung ngay trong khoang (toi da 90 ngay/lan). Khong co cot capacity/available/booked — ton kho ghe quan ly rieng qua Flight Seat (hang muc Backend V5 tiep theo)."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
