@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  BookingDomain,
   BookingStatus,
   Prisma,
   ProviderStatus,
@@ -13,6 +14,7 @@ import {
   TransportRouteStatus,
   VehicleStatus,
 } from '@prisma/client';
+import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import { TransportRouteRepository } from '../transport-route/transport-route.repository';
 import { TransportScheduleRepository } from '../transport-schedule/transport-schedule.repository';
@@ -32,6 +34,7 @@ export class TransportBookingService {
     private readonly vehicleRepository: VehicleRepository,
     private readonly transportScheduleRepository: TransportScheduleRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly paymentService: PaymentService,
   ) {}
 
   /** Public — xem con cho khong + bao gia truoc khi nhap Customer Info. */
@@ -91,7 +94,16 @@ export class TransportBookingService {
       throw new ConflictException('Not enough seats available for this departure date');
     }
 
-    return result.booking;
+    const { checkoutUrl } = await this.paymentService.createForBooking({
+      userId,
+      bookingDomain: BookingDomain.TRANSPORT,
+      bookingId: result.booking.id,
+      amount: result.booking.totalPrice,
+      currency: result.booking.currency,
+      description: `${route.origin} -> ${route.destination} (${dto.departureDate})`,
+    });
+
+    return { booking: result.booking, checkoutUrl };
   }
 
   /** Admin — xem toan bo TransportBooking, filter theo status (CONFIRMED/CANCELLED). */

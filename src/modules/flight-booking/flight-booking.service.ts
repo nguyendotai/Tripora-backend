@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  BookingDomain,
   FlightScheduleStatus,
   FlightSeatStatus,
   FlightStatus,
@@ -16,6 +17,7 @@ import {
 } from '@prisma/client';
 import { AirportRepository } from '../airport/airport.repository';
 import { FlightSeatRepository } from '../flight-seat/flight-seat.repository';
+import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 import { CreateFlightBookingDto } from './dto/create-flight-booking.dto';
@@ -30,6 +32,7 @@ export class FlightBookingService {
     private readonly flightSeatRepository: FlightSeatRepository,
     private readonly airportRepository: AirportRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly paymentService: PaymentService,
   ) {}
 
   /**
@@ -115,7 +118,17 @@ export class FlightBookingService {
     if (!result.ok) {
       throw new ConflictException('One or more selected seats are no longer available');
     }
-    return result.booking;
+
+    const { checkoutUrl } = await this.paymentService.createForBooking({
+      userId,
+      bookingDomain: BookingDomain.FLIGHT,
+      bookingId: result.booking.id,
+      amount: totalPrice,
+      currency: 'VND',
+      description: `Flight: ${schedule.flight.flightNumber} (${departureAirport.code} -> ${arrivalAirport.code})`,
+    });
+
+    return { booking: result.booking, checkoutUrl };
   }
 
   /** Admin — xem toan bo FlightBooking, filter theo status (CONFIRMED/CANCELLED). */

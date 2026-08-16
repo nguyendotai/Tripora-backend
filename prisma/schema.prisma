@@ -42,6 +42,8 @@ model User {
   experienceBookings ExperienceBooking[]
   transportBookings  TransportBooking[]
   flightBookings     FlightBooking[]
+  payments           Payment[]
+  invoices           Invoice[]
 
   @@map("users")
 }
@@ -340,9 +342,19 @@ model RoomInventory {
   @@map("room_inventory")
 }
 
+// V6 mo rong tu 2 gia tri (CONFIRMED/CANCELLED) — dung chung cho ca 5 bang Booking
+// (Hotel/Tour/Experience/Transport/Flight), chi 1 cho sua schema ap dung cho ca 5.
+// State machine: PENDING_PAYMENT -> PAID -> CONFIRMED -> COMPLETED, hoac
+// PENDING_PAYMENT -> EXPIRED, hoac CONFIRMED -> CANCELLED -> REFUND_PENDING -> REFUNDED.
 enum BookingStatus {
+  PENDING_PAYMENT
+  PAID
   CONFIRMED
+  COMPLETED
+  EXPIRED
   CANCELLED
+  REFUND_PENDING
+  REFUNDED
 }
 
 // Snapshot propertyName/roomName/totalPrice tai thoi diem dat — khong bao gio join
@@ -359,7 +371,7 @@ model HotelBooking {
   nights       Int
   totalPrice   Decimal       @map("total_price") @db.Decimal(10, 2)
   currency     String        @default("VND")
-  status       BookingStatus @default(CONFIRMED)
+  status       BookingStatus @default(PENDING_PAYMENT)
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
@@ -520,7 +532,7 @@ model TourBooking {
   customerPhone  String?       @map("customer_phone")
   totalPrice     Decimal       @map("total_price") @db.Decimal(10, 2)
   currency       String        @default("VND")
-  status         BookingStatus @default(CONFIRMED)
+  status         BookingStatus @default(PENDING_PAYMENT)
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
@@ -605,7 +617,7 @@ model ExperienceBooking {
   customerPhone   String?       @map("customer_phone")
   totalPrice      Decimal       @map("total_price") @db.Decimal(10, 2)
   currency        String        @default("VND")
-  status          BookingStatus @default(CONFIRMED)
+  status          BookingStatus @default(PENDING_PAYMENT)
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
@@ -739,7 +751,7 @@ model TransportBooking {
   customerPhone    String?       @map("customer_phone")
   totalPrice       Decimal       @map("total_price") @db.Decimal(10, 2)
   currency         String        @default("VND")
-  status           BookingStatus @default(CONFIRMED)
+  status           BookingStatus @default(PENDING_PAYMENT)
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
@@ -973,7 +985,7 @@ model FlightBooking {
   customerPhone        String?       @map("customer_phone")
   totalPrice           Decimal       @map("total_price") @db.Decimal(10, 2)
   currency             String        @default("VND")
-  status               BookingStatus @default(CONFIRMED)
+  status               BookingStatus @default(PENDING_PAYMENT)
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")
 
@@ -1004,4 +1016,78 @@ model Passenger {
   @@index([flightBookingId])
   @@index([seatId])
   @@map("passengers")
+}
+
+// V6 — Payment. workflow_and_database.md mo ta payments.bookingId nhu 1 FK don (tu duy 1 bang
+// "bookings" chung kieu MongoDB), nhung schema MySQL that cua Tripora co 5 bang Booking tach biet
+// (hotel_bookings/tour_bookings/experience_bookings/transport_bookings/flight_bookings), khong co
+// bang "bookings" gop — Prisma khong ho tro FK tro toi nhieu bang khac nhau. Dung cap cot
+// bookingDomain + bookingId (khong phai FK Prisma that, chi luu id tho) — tra cuu Booking that su
+// lam o tang Service bang cach dispatch theo bookingDomain sang dung Repository tuong ung.
+enum BookingDomain {
+  HOTEL
+  TOUR
+  EXPERIENCE
+  TRANSPORT
+  FLIGHT
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// transactionId luu Stripe Checkout Session id (hoac PaymentIntent id) khi da biet, chi de tham
+// khao/audit — webhook tra ve dung Payment can cap nhat qua metadata.paymentId gan san luc tao
+// Checkout Session, khong can tra nguoc qua transactionId.
+model Payment {
+  id            BigInt        @id @default(autoincrement())
+  userId        BigInt        @map("user_id")
+  bookingDomain BookingDomain @map("booking_domain")
+  bookingId     BigInt        @map("booking_id")
+  amount        Decimal       @map("amount") @db.Decimal(10, 2)
+  currency      String        @default("VND")
+  provider      String        @default("stripe")
+  method        String?
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @map("transaction_id")
+  paidAt        DateTime?     @map("paid_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  invoice Invoice?
+
+  @@index([userId])
+  @@index([bookingDomain, bookingId])
+  @@map("payments")
+}
+
+enum InvoiceStatus {
+  ISSUED
+}
+
+// Chua co Coupon (V6 vong sau) nen discount/tax luon 0, subtotal = total = Payment.amount —
+// mo rong khi Coupon/Tax duoc them.
+model Invoice {
+  id            BigInt        @id @default(autoincrement())
+  userId        BigInt        @map("user_id")
+  paymentId     BigInt        @unique @map("payment_id")
+  bookingDomain BookingDomain @map("booking_domain")
+  bookingId     BigInt        @map("booking_id")
+  invoiceNumber String        @unique @map("invoice_number")
+  subtotal      Decimal       @db.Decimal(10, 2)
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
+  tax           Decimal       @default(0) @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  currency      String        @default("VND")
+  status        InvoiceStatus @default(ISSUED)
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([userId])
+  @@map("invoices")
 }
