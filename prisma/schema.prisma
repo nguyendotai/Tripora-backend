@@ -242,6 +242,7 @@ model Provider {
   tours       Tour[]
   experiences Experience[]
   tourGuides  TourGuide[]
+  vehicles    Vehicle[]
 
   @@map("providers")
 }
@@ -608,4 +609,44 @@ model ExperienceBooking {
   @@index([userId])
   @@index([experienceId])
   @@map("experience_bookings")
+}
+
+enum VehicleType {
+  CAR
+  SUV
+  VAN
+  BUS
+  MOTORBIKE
+}
+
+enum VehicleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// V4 mo dau — tai dung Provider (ProviderType.TRANSPORT, da co san tu schema V2 nhung chua dung)
+// dung pattern voi Tour/Experience o V3, khong tao entity "Transportation Company" rieng.
+// Mirror Tour/Property: entity cap cao nhat (providerId truc tiep, khong long duoi entity khac)
+// nen can Admin duyet (PENDING/APPROVED/REJECTED) truoc khi hien cong khai, giong Property/Tour/
+// Experience — khac Room la entity con cua Property nen chi can ACTIVE/INACTIVE.
+model Vehicle {
+  id           BigInt        @id @default(autoincrement())
+  providerId   BigInt        @map("provider_id")
+  type         VehicleType
+  name         String
+  model        String?
+  capacity     Int
+  features     Json?
+  licensePlate String        @unique @map("license_plate")
+  images       Json?
+  status       VehicleStatus @default(PENDING)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+
+  provider Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
+  @@map("vehicles")
 }
