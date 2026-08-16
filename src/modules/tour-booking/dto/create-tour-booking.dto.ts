@@ -1,4 +1,13 @@
-import { IsDateString, IsEmail, IsInt, IsNumberString, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEmail,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateTourBookingDto {
   @IsNumberString()
@@ -22,4 +31,8 @@ export class CreateTourBookingDto {
   @IsOptional()
   @IsString()
   customerPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }

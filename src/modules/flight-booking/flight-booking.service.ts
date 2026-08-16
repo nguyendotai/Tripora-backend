@@ -16,10 +16,14 @@ import {
   SeatClass,
 } from '@prisma/client';
 import { AirportRepository } from '../airport/airport.repository';
+import { CouponService } from '../coupon/coupon.service';
 import { FlightSeatRepository } from '../flight-seat/flight-seat.repository';
 import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { CreateFlightBookingDto } from './dto/create-flight-booking.dto';
 import { ListAllFlightBookingsDto } from './dto/list-all-flight-bookings.dto';
 import { ListProviderFlightBookingsDto } from './dto/list-provider-flight-bookings.dto';
@@ -33,6 +37,7 @@ export class FlightBookingService {
     private readonly airportRepository: AirportRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly paymentService: PaymentService,
+    private readonly couponService: CouponService,
   ) {}
 
   /**
@@ -44,13 +49,22 @@ export class FlightBookingService {
    */
   async create(userId: bigint, dto: CreateFlightBookingDto) {
     if (dto.seatIds.length !== dto.passengers.length) {
-      throw new BadRequestException('seatIds and passengers must have the same length');
+      throw new BadRequestException(
+        'seatIds and passengers must have the same length',
+      );
     }
+
+    await this.couponService.validateCode(
+      userId,
+      BookingDomain.FLIGHT,
+      dto.couponCode,
+    );
 
     const scheduleId = BigInt(dto.scheduleId);
     const seatIds = dto.seatIds.map((id) => BigInt(id));
 
-    const schedule = await this.flightSeatRepository.findScheduleWithFlight(scheduleId);
+    const schedule =
+      await this.flightSeatRepository.findScheduleWithFlight(scheduleId);
     if (!schedule || schedule.flight.status !== FlightStatus.APPROVED) {
       throw new NotFoundException('Flight schedule not found');
     }
@@ -68,14 +82,20 @@ export class FlightBookingService {
     for (const seatId of seatIds) {
       const seat = seatById.get(seatId.toString())!;
       if (seat.scheduleId !== scheduleId) {
-        throw new BadRequestException('All selected seats must belong to the same schedule');
+        throw new BadRequestException(
+          'All selected seats must belong to the same schedule',
+        );
       }
       if (seat.status !== FlightSeatStatus.AVAILABLE) {
-        throw new ConflictException('One or more selected seats are no longer available');
+        throw new ConflictException(
+          'One or more selected seats are no longer available',
+        );
       }
       if (seat.class === SeatClass.BUSINESS) {
         if (schedule.businessPrice === null) {
-          throw new BadRequestException('Business price is not set for this schedule');
+          throw new BadRequestException(
+            'Business price is not set for this schedule',
+          );
         }
         totalPrice = totalPrice.add(schedule.businessPrice);
       } else {
@@ -116,14 +136,25 @@ export class FlightBookingService {
     });
 
     if (!result.ok) {
-      throw new ConflictException('One or more selected seats are no longer available');
+      throw new ConflictException(
+        'One or more selected seats are no longer available',
+      );
     }
+
+    const { discountAmount } = await this.couponService.applyDiscount({
+      userId,
+      bookingDomain: BookingDomain.FLIGHT,
+      bookingId: result.booking.id,
+      subtotal: totalPrice,
+      couponCode: dto.couponCode,
+    });
 
     const { checkoutUrl } = await this.paymentService.createForBooking({
       userId,
       bookingDomain: BookingDomain.FLIGHT,
       bookingId: result.booking.id,
-      amount: totalPrice,
+      amount: totalPrice.sub(discountAmount),
+      discountAmount,
       currency: 'VND',
       description: `Flight: ${schedule.flight.flightNumber} (${departureAirport.code} -> ${arrivalAirport.code})`,
     });
@@ -138,7 +169,11 @@ export class FlightBookingService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.flightBookingRepository.findAll(where, skip, take);
+    const [items, totalItems] = await this.flightBookingRepository.findAll(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -149,14 +184,19 @@ export class FlightBookingService {
   }
 
   /** Airline Provider — xem FlightBooking cua cac Flight minh so huu, optional loc theo 1 Flight. */
-  async listMineAsProvider(userId: bigint, query: ListProviderFlightBookingsDto) {
+  async listMineAsProvider(
+    userId: bigint,
+    query: ListProviderFlightBookingsDto,
+  ) {
     const provider = await this.providerRepository.findByUserId(userId);
     if (
       !provider ||
       provider.status !== ProviderStatus.APPROVED ||
       provider.type !== ProviderType.FLIGHT
     ) {
-      throw new ForbiddenException('You need an approved airline profile to do this');
+      throw new ForbiddenException(
+        'You need an approved airline profile to do this',
+      );
     }
 
     const today = this.today();
@@ -183,14 +223,30 @@ export class FlightBookingService {
 
     const today = this.today();
     if (booking.departureDate <= today) {
-      throw new BadRequestException('Cannot cancel a booking that has already departed');
+      throw new BadRequestException(
+        'Cannot cancel a booking that has already departed',
+      );
     }
 
     const seatIds = booking.passengers.map((passenger) => passenger.seatId);
-    const result = await this.flightBookingRepository.cancelBooking(bookingId, seatIds);
+    const result = await this.flightBookingRepository.cancelBooking(
+      bookingId,
+      seatIds,
+    );
     if (!result.ok) {
       throw new BadRequestException('This booking is already cancelled');
     }
+
+    const refundResult = await this.paymentService.createRefundForBooking({
+      userId,
+      bookingDomain: BookingDomain.FLIGHT,
+      bookingId,
+      startDate: booking.departureDate,
+    });
+    if (refundResult.refundPending) {
+      result.booking.status = 'REFUND_PENDING';
+    }
+
     return result.booking;
   }
 

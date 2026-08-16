@@ -1,7 +1,19 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
@@ -10,6 +22,7 @@ import { ApplyProviderDto } from './dto/apply-provider.dto';
 import { ListProvidersDto } from './dto/list-providers.dto';
 import { ReviewProviderDto } from './dto/review-provider.dto';
 import { SuspendProviderDto } from './dto/suspend-provider.dto';
+import { UpdateCommissionRateDto } from './dto/update-commission-rate.dto';
 import { ProviderService } from './provider.service';
 
 @ApiTags('Provider')
@@ -20,7 +33,10 @@ export class ProviderController {
   constructor(private readonly providerService: ProviderService) {}
 
   @Post('apply')
-  apply(@CurrentUser() user: CurrentUserPayload, @Body() dto: ApplyProviderDto) {
+  apply(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: ApplyProviderDto,
+  ) {
     return this.providerService.apply(BigInt(user.id), dto);
   }
 
@@ -40,7 +56,11 @@ export class ProviderController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   review(@Param('id') id: string, @Body() dto: ReviewProviderDto) {
-    return this.providerService.review(parseIdParam(id), dto.status, dto.reason);
+    return this.providerService.review(
+      parseIdParam(id),
+      dto.status,
+      dto.reason,
+    );
   }
 
   @Patch(':id/suspend')
@@ -55,5 +75,18 @@ export class ProviderController {
   @Roles(Role.ADMIN)
   unsuspend(@Param('id') id: string) {
     return this.providerService.unsuspend(parseIdParam(id));
+  }
+
+  @Patch(':id/commission-rate')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  updateCommissionRate(
+    @Param('id') id: string,
+    @Body() dto: UpdateCommissionRateDto,
+  ) {
+    return this.providerService.updateCommissionRate(
+      parseIdParam(id),
+      dto.commissionRate,
+    );
   }
 }
