@@ -237,12 +237,13 @@ model Provider {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
-  user        User         @relation(fields: [userId], references: [id])
-  properties  Property[]
-  tours       Tour[]
-  experiences Experience[]
-  tourGuides  TourGuide[]
-  vehicles    Vehicle[]
+  user            User             @relation(fields: [userId], references: [id])
+  properties      Property[]
+  tours           Tour[]
+  experiences     Experience[]
+  tourGuides      TourGuide[]
+  vehicles        Vehicle[]
+  transportRoutes TransportRoute[]
 
   @@map("providers")
 }
@@ -645,8 +646,67 @@ model Vehicle {
   updatedAt    DateTime      @updatedAt @map("updated_at")
   deletedAt    DateTime?     @map("deleted_at")
 
-  provider Provider @relation(fields: [providerId], references: [id])
+  provider  Provider            @relation(fields: [providerId], references: [id])
+  schedules TransportSchedule[]
 
   @@index([providerId])
   @@map("vehicles")
+}
+
+enum TransportRouteStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Hạng mục thứ 2 Backend V4 — "Transport Route/Schedule: CRUD" gộp chung 1 bullet checklist
+// (workflow_and_database.md mục 13 chỉ liệt kê tên transport_routes/transport_schedules, không có
+// field schema chi tiết — tự thiết kế mirror Tour/TourSchedule). Route là entity cấp cao nhất
+// (providerId trực tiếp) nên cần Admin duyệt trước khi hiện công khai, giống Vehicle/Tour/Property —
+// đúng luồng Frontend "Select Transport → Pickup → Drop-off" tức khách tìm Route theo origin/destination
+// trước, chọn Vehicle sau (Vehicle không gắn cứng vào Route).
+model TransportRoute {
+  id                BigInt               @id @default(autoincrement())
+  providerId        BigInt               @map("provider_id")
+  origin            String
+  destination       String
+  vehicleType       VehicleType?         @map("vehicle_type")
+  price             Decimal              @db.Decimal(10, 2)
+  currency          String               @default("VND")
+  estimatedDuration String?              @map("estimated_duration")
+  status            TransportRouteStatus @default(PENDING)
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  deletedAt         DateTime?            @map("deleted_at")
+
+  provider  Provider            @relation(fields: [providerId], references: [id])
+  schedules TransportSchedule[]
+
+  @@index([providerId])
+  @@map("transport_routes")
+}
+
+// Mirror TourSchedule (bulk-set theo khoảng ngày, 3 cột capacity/available/booked sẵn sàng cho
+// decrement atomic ở Transport Booking vòng sau) — thêm vehicleId vì 1 Route có thể chạy bằng nhiều
+// Vehicle khác nhau tuỳ ngày, khác Tour chỉ có đúng 1 "sản phẩm". vehicleId phải thuộc cùng Provider
+// với routeId (kiểm tra ở Service, không phải composite FK).
+model TransportSchedule {
+  id            BigInt   @id @default(autoincrement())
+  routeId       BigInt   @map("route_id")
+  vehicleId     BigInt   @map("vehicle_id")
+  departureDate DateTime @map("departure_date") @db.Date
+  capacity      Int
+  available     Int
+  booked        Int      @default(0)
+  price         Decimal? @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  route   TransportRoute @relation(fields: [routeId], references: [id])
+  vehicle Vehicle        @relation(fields: [vehicleId], references: [id])
+
+  @@unique([routeId, vehicleId, departureDate])
+  @@index([routeId])
+  @@index([vehicleId])
+  @@map("transport_schedules")
 }
