@@ -15,6 +15,16 @@ export interface CheckoutSessionResult {
   url: string;
 }
 
+export interface CreateRefundParams {
+  paymentIntentId: string;
+  amount: Prisma.Decimal;
+  refundId: bigint;
+}
+
+export interface RefundResult {
+  stripeRefundId: string;
+}
+
 /** Boc Stripe SDK (Checkout Session — trang thanh toan Stripe host san, khong tu dung form nhap
  * the). Chi noi duy nhat trong module goi ra Stripe that, de de thay bang gateway khac sau nay
  * ma khong dong toi PaymentService/Repository. */
@@ -23,13 +33,17 @@ export class PaymentGatewayService {
   private readonly stripe: Stripe;
 
   constructor(private readonly config: ConfigService) {
-    this.stripe = new Stripe(this.config.get<string>('STRIPE_SECRET_KEY') ?? '');
+    this.stripe = new Stripe(
+      this.config.get<string>('STRIPE_SECRET_KEY') ?? '',
+    );
   }
 
   /** VND nam trong danh sach "zero-decimal currency" cua Stripe — unit_amount truyen thang
    * bang amount, khong nhan 100 nhu USD. metadata.paymentId de webhook tra nguoc dung Payment
    * khong can luu/tra cuu qua transactionId. */
-  async createCheckoutSession(params: CreateCheckoutSessionParams): Promise<CheckoutSessionResult> {
+  async createCheckoutSession(
+    params: CreateCheckoutSessionParams,
+  ): Promise<CheckoutSessionResult> {
     const successUrl = `${this.config.get<string>('STRIPE_SUCCESS_URL')}?paymentId=${params.paymentId}`;
     const cancelUrl = `${this.config.get<string>('STRIPE_CANCEL_URL')}?paymentId=${params.paymentId}`;
 
@@ -56,11 +70,27 @@ export class PaymentGatewayService {
     return { sessionId: session.id, url: session.url };
   }
 
+  /** metadata.refundId de webhook refund.updated tra nguoc dung Refund can cap nhat, mirror dung
+   * cach metadata.paymentId dung cho Checkout Session. */
+  async createRefund(params: CreateRefundParams): Promise<RefundResult> {
+    const refund = await this.stripe.refunds.create({
+      payment_intent: params.paymentIntentId,
+      amount: Math.round(Number(params.amount)),
+      metadata: { refundId: params.refundId.toString() },
+    });
+    return { stripeRefundId: refund.id };
+  }
+
   /** Nem loi neu chu ky sai — cam nhan payload chua verify (backend/CLAUDE.md muc 3 "Payment
    * Verify"). rawBody bat buoc phai la Buffer that (Stripe ky tren raw bytes, khong phai JSON
    * da parse). */
   constructEvent(rawBody: Buffer, signature: string): Stripe.Event {
-    const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET') ?? '';
-    return this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    const webhookSecret =
+      this.config.get<string>('STRIPE_WEBHOOK_SECRET') ?? '';
+    return this.stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      webhookSecret,
+    );
   }
 }

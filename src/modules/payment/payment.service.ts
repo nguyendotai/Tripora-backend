@@ -6,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { BookingDomain, Prisma } from '@prisma/client';
 import Stripe from 'stripe';
 import { NotificationService } from '../notification/notification.service';
@@ -22,6 +23,18 @@ export interface CreatePaymentForBookingParams {
   description: string;
 }
 
+export interface CreateRefundForBookingParams {
+  userId: bigint;
+  bookingDomain: BookingDomain;
+  bookingId: bigint;
+  startDate: Date;
+  reason?: string;
+}
+
+const DEFAULT_REFUND_FULL_DAYS = 7;
+const DEFAULT_REFUND_PARTIAL_DAYS = 3;
+const DEFAULT_REFUND_PARTIAL_PERCENT = 50;
+
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
@@ -30,6 +43,7 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGateway: PaymentGatewayService,
     private readonly notificationService: NotificationService,
+    private readonly config: ConfigService,
   ) {}
 
   /** Goi ngay sau khi 1 trong 5 domain Booking tao Booking (status PENDING_PAYMENT) — tao
@@ -113,6 +127,111 @@ export class PaymentService {
     return { checkoutUrl: session.url };
   }
 
+  /**
+   * Goi tu cancel() cua ca 5 domain SAU KHI Booking da chuyen CONFIRMED -> CANCELLED thanh cong.
+   * Tinh % hoan theo REFUND_FULL_DAYS/REFUND_PARTIAL_DAYS/REFUND_PARTIAL_PERCENT (so ngay tu hom
+   * nay toi startDate). Khong co Payment SUCCESS tuong ung (vi du Booking chua tung thanh toan
+   * that) thi bo qua, khong lam gi. Loi goi Stripe khong lam fail request huy cua khach — chi log
+   * server-side, Refund/Booking giu PENDING/REFUND_PENDING cho xu ly thu cong (gioi han biet
+   * truoc, khong co UI Admin retry-refund vong nay). Tra ve `refundPending` de caller (cancel()
+   * cua tung domain) sua lai status tra ve HTTP response cho dung — Booking trong DB da sang
+   * REFUND_PENDING nhung bien local `result.booking` da tao truoc do van con CANCELLED.
+   */
+  async createRefundForBooking(
+    params: CreateRefundForBookingParams,
+  ): Promise<{ refundPending: boolean }> {
+    const payment = await this.paymentRepository.findSuccessfulPaymentByBooking(
+      params.bookingDomain,
+      params.bookingId,
+    );
+    if (!payment) return { refundPending: false };
+
+    const { percent, amount } = this.computeRefundAmount(
+      payment.amount,
+      params.startDate,
+    );
+
+    const refund = await this.paymentRepository.createRefundRecord({
+      paymentId: payment.id,
+      userId: params.userId,
+      bookingDomain: params.bookingDomain,
+      bookingId: params.bookingId,
+      amount,
+      percent,
+      reason: params.reason,
+    });
+
+    if (amount.lte(0)) return { refundPending: false };
+
+    if (!payment.paymentIntentId) {
+      this.logger.error(
+        `Payment ${payment.id} has no paymentIntentId — cannot call Stripe refund API for refund ${refund.id}`,
+      );
+      return { refundPending: true };
+    }
+
+    try {
+      const result = await this.paymentGateway.createRefund({
+        paymentIntentId: payment.paymentIntentId,
+        amount,
+        refundId: refund.id,
+      });
+      await this.paymentRepository.setStripeRefundId(
+        refund.id,
+        result.stripeRefundId,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Stripe createRefund failed for refund ${refund.id} (payment ${payment.id})`,
+        error instanceof Error ? error.stack : error,
+      );
+    }
+
+    return { refundPending: true };
+  }
+
+  private computeRefundAmount(
+    paymentAmount: Prisma.Decimal,
+    startDate: Date,
+  ): { percent: number; amount: Prisma.Decimal } {
+    // ConfigService.get<number>() khong tu ep kieu that (generic chi la khai bao TypeScript,
+    // env var luon la string) — phai tu Number() de tranh loi tho ("50" thay vi 50).
+    const fullDays = this.readIntEnv(
+      'REFUND_FULL_DAYS',
+      DEFAULT_REFUND_FULL_DAYS,
+    );
+    const partialDays = this.readIntEnv(
+      'REFUND_PARTIAL_DAYS',
+      DEFAULT_REFUND_PARTIAL_DAYS,
+    );
+    const partialPercent = this.readIntEnv(
+      'REFUND_PARTIAL_PERCENT',
+      DEFAULT_REFUND_PARTIAL_PERCENT,
+    );
+
+    const daysUntilStart = Math.floor(
+      (startDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+    );
+
+    let percent: number;
+    if (daysUntilStart >= fullDays) {
+      percent = 100;
+    } else if (daysUntilStart >= partialDays) {
+      percent = partialPercent;
+    } else {
+      percent = 0;
+    }
+
+    const amount = paymentAmount.mul(percent).div(100);
+    return { percent, amount };
+  }
+
+  private readIntEnv(key: string, fallback: number): number {
+    const raw = this.config.get<string>(key);
+    const parsed = raw === undefined ? NaN : Number(raw);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
   /** Endpoint duy nhat duoc phep doi status Payment/Booking — verify chu ky truoc, cam nhan
    * truc tiep tu Frontend redirect (backend/CLAUDE.md muc 3). */
   async handleWebhook(rawBody: Buffer, signature: string): Promise<void> {
@@ -123,8 +242,15 @@ export class PaymentService {
       const paymentId = this.extractPaymentId(session.metadata);
       if (paymentId === null) return;
 
-      const applied =
-        await this.paymentRepository.markSuccessAndConfirmBooking(paymentId);
+      const paymentIntentId =
+        typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent?.id;
+
+      const applied = await this.paymentRepository.markSuccessAndConfirmBooking(
+        paymentId,
+        paymentIntentId,
+      );
       if (applied) {
         const payment = await this.paymentRepository.findById(paymentId);
         if (payment) {
@@ -153,13 +279,47 @@ export class PaymentService {
       if (paymentId !== null) {
         await this.paymentRepository.markFailed(paymentId);
       }
+      return;
+    }
+
+    if (event.type === 'refund.updated') {
+      const refundObject = event.data.object;
+      const refundId = this.extractId(refundObject.metadata, 'refundId');
+      if (refundId === null) return;
+
+      if (refundObject.status === 'succeeded') {
+        const applied =
+          await this.paymentRepository.markRefundSuccess(refundId);
+        if (applied) {
+          const refund = await this.paymentRepository.findRefundById(refundId);
+          if (refund) {
+            await this.notificationService.notify(
+              refund.userId,
+              'Hoàn tiền thành công',
+              `Yêu cầu hoàn tiền cho đơn đặt chỗ #${refund.bookingId} đã hoàn tất.`,
+            );
+          }
+        }
+      } else if (refundObject.status === 'failed') {
+        this.logger.error(
+          `Stripe refund ${refundObject.id} (refund #${refundId}) failed`,
+        );
+        await this.paymentRepository.markRefundFailed(refundId);
+      }
     }
   }
 
   private extractPaymentId(
     metadata: Stripe.Metadata | null | undefined,
   ): bigint | null {
-    const raw = metadata?.paymentId;
+    return this.extractId(metadata, 'paymentId');
+  }
+
+  private extractId(
+    metadata: Stripe.Metadata | null | undefined,
+    key: string,
+  ): bigint | null {
+    const raw = metadata?.[key];
     if (!raw) return null;
     try {
       return BigInt(raw);

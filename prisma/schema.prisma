@@ -45,6 +45,7 @@ model User {
   payments           Payment[]
   invoices           Invoice[]
   couponRedemptions  CouponRedemption[]
+  refunds            Refund[]
 
   @@map("users")
 }
@@ -1043,23 +1044,25 @@ enum PaymentStatus {
 // khao/audit — webhook tra ve dung Payment can cap nhat qua metadata.paymentId gan san luc tao
 // Checkout Session, khong can tra nguoc qua transactionId.
 model Payment {
-  id             BigInt        @id @default(autoincrement())
-  userId         BigInt        @map("user_id")
-  bookingDomain  BookingDomain @map("booking_domain")
-  bookingId      BigInt        @map("booking_id")
-  amount         Decimal       @map("amount") @db.Decimal(10, 2)
-  discountAmount Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2)
-  currency       String        @default("VND")
-  provider       String        @default("stripe")
-  method         String?
-  status         PaymentStatus @default(PENDING)
-  transactionId  String?       @map("transaction_id")
-  paidAt         DateTime?     @map("paid_at")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  id              BigInt        @id @default(autoincrement())
+  userId          BigInt        @map("user_id")
+  bookingDomain   BookingDomain @map("booking_domain")
+  bookingId       BigInt        @map("booking_id")
+  amount          Decimal       @map("amount") @db.Decimal(10, 2)
+  discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  currency        String        @default("VND")
+  provider        String        @default("stripe")
+  method          String?
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?       @map("transaction_id")
+  paymentIntentId String?       @map("payment_intent_id")
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user    User     @relation(fields: [userId], references: [id])
   invoice Invoice?
+  refund  Refund?
 
   @@index([userId])
   @@index([bookingDomain, bookingId])
@@ -1168,4 +1171,38 @@ model Promotion {
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
   @@map("promotions")
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// 1 Refund / 1 Payment (paymentId unique) — huy Booking CONFIRMED chi tao duoc toi da 1 lan (status
+// guard cua cancelBooking chi cho phep tu CONFIRMED). percent/amount tinh theo REFUND_FULL_DAYS/
+// REFUND_PARTIAL_DAYS luc huy — amount=0 (ngoai moc hoan tien) van tao 1 dong SUCCESS de luu lich
+// su, khong goi Stripe, Booking dung lai o CANCELLED (khong sang REFUND_PENDING). amount>0: PENDING
+// cho toi khi webhook refund.updated (status succeeded) xac nhan that -> SUCCESS (backend/CLAUDE.md
+// muc 3 "Payment Verify" ap dung them cho Refund, khong rieng Payment).
+model Refund {
+  id             BigInt        @id @default(autoincrement())
+  paymentId      BigInt        @unique @map("payment_id")
+  userId         BigInt        @map("user_id")
+  bookingDomain  BookingDomain @map("booking_domain")
+  bookingId      BigInt        @map("booking_id")
+  amount         Decimal       @db.Decimal(10, 2)
+  percent        Int
+  reason         String?       @db.Text
+  status         RefundStatus  @default(PENDING)
+  stripeRefundId String?       @map("stripe_refund_id")
+  processedAt    DateTime?     @map("processed_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([userId])
+  @@index([bookingDomain, bookingId])
+  @@map("refunds")
 }

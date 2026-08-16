@@ -1597,7 +1597,7 @@
               "path": ["tour-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic. **[V6 vong 2]** Neu booking da thanh toan thanh cong, tu dong tao Refund theo % tuy so ngay con lai truoc `departureDate` (>=`REFUND_FULL_DAYS` 100%, >=`REFUND_PARTIAL_DAYS` `REFUND_PARTIAL_PERCENT`%, con lai 0%) — response tra ve status `REFUND_PENDING` neu co hoan tien (cho webhook Stripe xac nhan xong moi sang `REFUNDED`), hoac giu `CANCELLED` neu 0%."
           }
         }
       ]
@@ -2075,7 +2075,7 @@
               "path": ["experience-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking, chi khi con CONFIRMED va departureDate chua toi."
+            "description": "Chi chu booking, chi khi con CONFIRMED va departureDate chua toi. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -2346,7 +2346,7 @@
               "path": ["bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Yeu cau dang nhap + la chu booking (403 neu khong). 400 neu booking da CANCELLED hoac checkInDate da toi/qua (khong huy duoc booking dang o/da o). Hoan tra availableRooms/bookedRooms atomic tung dem cung 1 transaction voi viec chuyen status -> CANCELLED."
+            "description": "Yeu cau dang nhap + la chu booking (403 neu khong). 400 neu booking da CANCELLED hoac checkInDate da toi/qua (khong huy duoc booking dang o/da o). Hoan tra availableRooms/bookedRooms atomic tung dem cung 1 transaction voi viec chuyen status -> CANCELLED. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy (tinh theo checkInDate) neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -2821,7 +2821,7 @@
               "path": ["transport-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -3436,7 +3436,7 @@
               "path": ["flight-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan tra tung ghe da dat ve AVAILABLE atomic."
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan tra tung ghe da dat ve AVAILABLE atomic. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -3461,7 +3461,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments", "webhook"]
             },
-            "description": "Stripe goi thang khi Checkout Session hoan tat/het han/that bai — khong goi qua Postman thuc te duoc vi can chu ky HMAC that (`stripe-signature`) ma chi Stripe tao ra. Dung Stripe CLI `stripe listen --forward-to <baseUrl>/payments/webhook` de test that. Verify chu ky qua `stripe.webhooks.constructEvent` (backend/CLAUDE.md muc 3 'Payment Verify') — sai chu ky bi tu choi ngay, khong doi status Payment/Booking."
+            "description": "Stripe goi thang khi Checkout Session hoan tat/het han/that bai — khong goi qua Postman thuc te duoc vi can chu ky HMAC that (`stripe-signature`) ma chi Stripe tao ra. Dung Stripe CLI `stripe listen --forward-to <baseUrl>/payments/webhook` de test that. Verify chu ky qua `stripe.webhooks.constructEvent` (backend/CLAUDE.md muc 3 'Payment Verify') — sai chu ky bi tu choi ngay, khong doi status Payment/Booking. **[V6 vong 2]** Cung endpoint nay xu ly them event `refund.updated` (status `succeeded`/`failed`) — chi nguon duy nhat duoc phep chuyen Refund/Booking `REFUND_PENDING` -> `REFUNDED`, ap dung dung luat 'Payment Verify' cho ca Refund."
           }
         },
         {
