@@ -906,9 +906,43 @@ model FlightSchedule {
   createdAt     DateTime             @default(now()) @map("created_at")
   updatedAt     DateTime             @updatedAt @map("updated_at")
 
-  flight Flight @relation(fields: [flightId], references: [id])
+  flight Flight       @relation(fields: [flightId], references: [id])
+  seats  FlightSeat[]
 
   @@unique([flightId, departureDate])
   @@index([flightId])
   @@map("flight_schedules")
+}
+
+enum SeatClass {
+  ECONOMY
+  BUSINESS
+}
+
+enum FlightSeatStatus {
+  AVAILABLE
+  BOOKED
+}
+
+// Hang muc Backend V5 thu 3 — day la noi khac hoan toan co che "tru ton kho theo so luong" da dung
+// nhat quan tu Room/Tour/Experience/Transport: moi ghe la 1 dong rieng (dung workflow_and_database.md
+// muc 14 da cho cho flight_seats), khach chon dung 1 ghe cu the thay vi chi nhap so luong. Tu dong
+// sinh du seatNumber/class khi 1 FlightSchedule MOI duoc tao (khong sinh lai khi set lai lich cu, vi
+// ghe cu co the da BOOKED) — dung theo economyCapacity/businessCapacity co san tren Aircraft cua
+// chinh Flight do (2 cot nay da duoc chuan bi san tu luc xay Aircraft). scheduleId+seatNumber duy
+// nhat — khong the co 2 ghe cung so hieu trong cung 1 chuyen bay cu the.
+model FlightSeat {
+  id         BigInt           @id @default(autoincrement())
+  scheduleId BigInt           @map("schedule_id")
+  seatNumber String           @map("seat_number")
+  class      SeatClass
+  status     FlightSeatStatus @default(AVAILABLE)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  schedule FlightSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@unique([scheduleId, seatNumber])
+  @@index([scheduleId])
+  @@map("flight_seats")
 }
