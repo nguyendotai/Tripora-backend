@@ -5,12 +5,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingDomain, BookingStatus, Prisma, ProviderStatus, ProviderType, TourStatus } from '@prisma/client';
+import {
+  BookingDomain,
+  BookingStatus,
+  Prisma,
+  ProviderStatus,
+  ProviderType,
+  TourStatus,
+} from '@prisma/client';
+import { CouponService } from '../coupon/coupon.service';
 import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import { TourRepository } from '../tour/tour.repository';
 import { TourScheduleRepository } from '../tour-schedule/tour-schedule.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { CheckTourAvailabilityDto } from './dto/check-tour-availability.dto';
 import { CreateTourBookingDto } from './dto/create-tour-booking.dto';
 import { ListAllTourBookingsDto } from './dto/list-all-tour-bookings.dto';
@@ -25,6 +36,7 @@ export class TourBookingService {
     private readonly tourScheduleRepository: TourScheduleRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly paymentService: PaymentService,
+    private readonly couponService: CouponService,
   ) {}
 
   /** Public — xem còn chỗ không + báo giá trước khi nhập Customer Info. */
@@ -33,13 +45,18 @@ export class TourBookingService {
     const tour = await this.getBookableTour(tourId);
     const departureDate = this.parseDate(dto.departureDate);
 
-    const schedule = await this.tourScheduleRepository.findByTourAndDate(tourId, departureDate);
+    const schedule = await this.tourScheduleRepository.findByTourAndDate(
+      tourId,
+      departureDate,
+    );
     const available = !!schedule && schedule.available > 0;
 
     return {
       available,
       availableSeats: schedule?.available ?? 0,
-      pricePerPerson: available ? (schedule.price ?? tour.price).toString() : null,
+      pricePerPerson: available
+        ? (schedule.price ?? tour.price).toString()
+        : null,
       currency: tour.currency,
     };
   }
@@ -50,8 +67,16 @@ export class TourBookingService {
     const departureDate = this.parseDate(dto.departureDate);
 
     if (tour.maxParticipants && dto.numberOfPeople > tour.maxParticipants) {
-      throw new BadRequestException(`This tour fits at most ${tour.maxParticipants} people`);
+      throw new BadRequestException(
+        `This tour fits at most ${tour.maxParticipants} people`,
+      );
     }
+
+    await this.couponService.validateCode(
+      userId,
+      BookingDomain.TOUR,
+      dto.couponCode,
+    );
 
     const result = await this.tourBookingRepository.createBooking({
       userId,
@@ -68,16 +93,29 @@ export class TourBookingService {
 
     if (!result.ok) {
       if (result.reason === 'MISSING_SCHEDULE') {
-        throw new BadRequestException('This tour has no departure scheduled for this date yet');
+        throw new BadRequestException(
+          'This tour has no departure scheduled for this date yet',
+        );
       }
-      throw new ConflictException('Not enough seats available for this departure date');
+      throw new ConflictException(
+        'Not enough seats available for this departure date',
+      );
     }
+
+    const { discountAmount } = await this.couponService.applyDiscount({
+      userId,
+      bookingDomain: BookingDomain.TOUR,
+      bookingId: result.booking.id,
+      subtotal: result.booking.totalPrice,
+      couponCode: dto.couponCode,
+    });
 
     const { checkoutUrl } = await this.paymentService.createForBooking({
       userId,
       bookingDomain: BookingDomain.TOUR,
       bookingId: result.booking.id,
-      amount: result.booking.totalPrice,
+      amount: result.booking.totalPrice.sub(discountAmount),
+      discountAmount,
       currency: result.booking.currency,
       description: `Tour: ${tour.title} (${dto.departureDate})`,
     });
@@ -92,7 +130,11 @@ export class TourBookingService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.tourBookingRepository.findAll(where, skip, take);
+    const [items, totalItems] = await this.tourBookingRepository.findAll(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -110,7 +152,9 @@ export class TourBookingService {
       provider.status !== ProviderStatus.APPROVED ||
       provider.type !== ProviderType.TOUR
     ) {
-      throw new ForbiddenException('You need an approved tour operator profile to do this');
+      throw new ForbiddenException(
+        'You need an approved tour operator profile to do this',
+      );
     }
 
     const today = this.today();
@@ -137,7 +181,9 @@ export class TourBookingService {
 
     const today = this.today();
     if (booking.departureDate <= today) {
-      throw new BadRequestException('Cannot cancel a booking that has already departed');
+      throw new BadRequestException(
+        'Cannot cancel a booking that has already departed',
+      );
     }
 
     const result = await this.tourBookingRepository.cancelBooking(

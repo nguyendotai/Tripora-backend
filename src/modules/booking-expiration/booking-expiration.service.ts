@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { BookingDomain } from '@prisma/client';
 import { BookingRepository } from '../booking/booking.repository';
+import { CouponRepository } from '../coupon/coupon.repository';
 import { ExperienceBookingRepository } from '../experience-booking/experience-booking.repository';
 import { FlightBookingRepository } from '../flight-booking/flight-booking.repository';
 import { PaymentRepository } from '../payment/payment.repository';
@@ -25,6 +26,7 @@ export class BookingExpirationService {
   constructor(
     private readonly config: ConfigService,
     private readonly paymentRepository: PaymentRepository,
+    private readonly couponRepository: CouponRepository,
     private readonly hotelBookingRepository: BookingRepository,
     private readonly tourBookingRepository: TourBookingRepository,
     private readonly experienceBookingRepository: ExperienceBookingRepository,
@@ -34,26 +36,69 @@ export class BookingExpirationService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async expirePendingBookings(): Promise<void> {
-    const minutes = this.config.get<number>('BOOKING_PAYMENT_EXPIRY_MINUTES') ?? DEFAULT_EXPIRY_MINUTES;
+    const minutes =
+      this.config.get<number>('BOOKING_PAYMENT_EXPIRY_MINUTES') ??
+      DEFAULT_EXPIRY_MINUTES;
     const cutoff = new Date(Date.now() - minutes * 60 * 1000);
 
-    const [hotelIds, tourIds, experienceIds, transportIds, flightIds] = await Promise.all([
-      this.hotelBookingRepository.expirePending(cutoff),
-      this.tourBookingRepository.expirePending(cutoff),
-      this.experienceBookingRepository.expirePending(cutoff),
-      this.transportBookingRepository.expirePending(cutoff),
-      this.flightBookingRepository.expirePending(cutoff),
-    ]);
+    const [hotelIds, tourIds, experienceIds, transportIds, flightIds] =
+      await Promise.all([
+        this.hotelBookingRepository.expirePending(cutoff),
+        this.tourBookingRepository.expirePending(cutoff),
+        this.experienceBookingRepository.expirePending(cutoff),
+        this.transportBookingRepository.expirePending(cutoff),
+        this.flightBookingRepository.expirePending(cutoff),
+      ]);
 
     await Promise.all([
-      this.paymentRepository.markFailedForExpiredBookings(BookingDomain.HOTEL, hotelIds),
-      this.paymentRepository.markFailedForExpiredBookings(BookingDomain.TOUR, tourIds),
-      this.paymentRepository.markFailedForExpiredBookings(BookingDomain.EXPERIENCE, experienceIds),
-      this.paymentRepository.markFailedForExpiredBookings(BookingDomain.TRANSPORT, transportIds),
-      this.paymentRepository.markFailedForExpiredBookings(BookingDomain.FLIGHT, flightIds),
+      this.paymentRepository.markFailedForExpiredBookings(
+        BookingDomain.HOTEL,
+        hotelIds,
+      ),
+      this.paymentRepository.markFailedForExpiredBookings(
+        BookingDomain.TOUR,
+        tourIds,
+      ),
+      this.paymentRepository.markFailedForExpiredBookings(
+        BookingDomain.EXPERIENCE,
+        experienceIds,
+      ),
+      this.paymentRepository.markFailedForExpiredBookings(
+        BookingDomain.TRANSPORT,
+        transportIds,
+      ),
+      this.paymentRepository.markFailedForExpiredBookings(
+        BookingDomain.FLIGHT,
+        flightIds,
+      ),
+      this.couponRepository.rollbackForExpiredBookings(
+        BookingDomain.HOTEL,
+        hotelIds,
+      ),
+      this.couponRepository.rollbackForExpiredBookings(
+        BookingDomain.TOUR,
+        tourIds,
+      ),
+      this.couponRepository.rollbackForExpiredBookings(
+        BookingDomain.EXPERIENCE,
+        experienceIds,
+      ),
+      this.couponRepository.rollbackForExpiredBookings(
+        BookingDomain.TRANSPORT,
+        transportIds,
+      ),
+      this.couponRepository.rollbackForExpiredBookings(
+        BookingDomain.FLIGHT,
+        flightIds,
+      ),
     ]);
 
-    const total = hotelIds.length + tourIds.length + experienceIds.length + transportIds.length + flightIds.length;
+    const total =
+      hotelIds.length +
+      tourIds.length +
+      experienceIds.length +
+      transportIds.length +
+      flightIds.length;
     if (total > 0) {
       this.logger.log(
         `Expired ${total} PENDING_PAYMENT booking(s): hotel=${hotelIds.length} tour=${tourIds.length} ` +

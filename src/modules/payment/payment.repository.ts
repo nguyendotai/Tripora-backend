@@ -7,6 +7,7 @@ export interface CreatePaymentParams {
   bookingDomain: BookingDomain;
   bookingId: bigint;
   amount: Prisma.Decimal;
+  discountAmount?: Prisma.Decimal;
   currency: string;
 }
 
@@ -32,6 +33,7 @@ export class PaymentRepository {
         bookingDomain: params.bookingDomain,
         bookingId: params.bookingId,
         amount: params.amount,
+        discountAmount: params.discountAmount ?? 0,
         currency: params.currency,
       },
     });
@@ -42,7 +44,10 @@ export class PaymentRepository {
   }
 
   setTransactionId(id: bigint, transactionId: string): Promise<Payment> {
-    return this.prisma.payment.update({ where: { id }, data: { transactionId } });
+    return this.prisma.payment.update({
+      where: { id },
+      data: { transactionId },
+    });
   }
 
   /** Dung khi retry — tao lai Checkout Session moi cho dung Payment do, dua status ve PENDING. */
@@ -84,7 +89,8 @@ export class PaymentRepository {
           bookingDomain: payment.bookingDomain,
           bookingId: payment.bookingId,
           invoiceNumber: `INV-${Date.now()}-${payment.id}`,
-          subtotal: payment.amount,
+          subtotal: payment.amount.add(payment.discountAmount),
+          discount: payment.discountAmount,
           total: payment.amount,
           currency: payment.currency,
         },
@@ -107,10 +113,17 @@ export class PaymentRepository {
    * dang tro toi Booking do cung phai FAILED theo, tranh 1 Payment con song tro ve Booking da
    * het han (neu khong, webhook thanh cong tre se khong flip duoc Booking vi status guard da
    * khong con PENDING_PAYMENT, nhung Payment se ket thuc sai o SUCCESS). */
-  async markFailedForExpiredBookings(bookingDomain: BookingDomain, bookingIds: bigint[]): Promise<void> {
+  async markFailedForExpiredBookings(
+    bookingDomain: BookingDomain,
+    bookingIds: bigint[],
+  ): Promise<void> {
     if (bookingIds.length === 0) return;
     await this.prisma.payment.updateMany({
-      where: { bookingDomain, bookingId: { in: bookingIds }, status: 'PENDING' },
+      where: {
+        bookingDomain,
+        bookingId: { in: bookingIds },
+        status: 'PENDING',
+      },
       data: { status: 'FAILED' },
     });
   }

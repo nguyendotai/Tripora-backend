@@ -37,4 +37,8 @@ export class CreateFlightBookingDto {
   @IsOptional()
   @IsString()
   customerPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }

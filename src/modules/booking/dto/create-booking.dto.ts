@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsDateString, IsNumberString, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsDateString,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { GuestDto } from './guest.dto';
 
 export class CreateBookingDto {
@@ -16,4 +23,8 @@ export class CreateBookingDto {
   @ValidateNested({ each: true })
   @Type(() => GuestDto)
   guests: GuestDto[];
+
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }

@@ -17,6 +17,7 @@ export interface CreatePaymentForBookingParams {
   bookingDomain: BookingDomain;
   bookingId: bigint;
   amount: Prisma.Decimal;
+  discountAmount?: Prisma.Decimal;
   currency: string;
   description: string;
 }
@@ -42,6 +43,7 @@ export class PaymentService {
       bookingDomain: params.bookingDomain,
       bookingId: params.bookingId,
       amount: params.amount,
+      discountAmount: params.discountAmount,
       currency: params.currency,
     });
 
@@ -62,7 +64,10 @@ export class PaymentService {
         'Payment gateway is temporarily unavailable. Your booking is saved, please try again shortly.',
       );
     }
-    await this.paymentRepository.setTransactionId(payment.id, session.sessionId);
+    await this.paymentRepository.setTransactionId(
+      payment.id,
+      session.sessionId,
+    );
 
     return { payment, checkoutUrl: session.url };
   }
@@ -99,7 +104,9 @@ export class PaymentService {
         `Stripe createCheckoutSession (retry) failed for payment ${payment.id}`,
         error instanceof Error ? error.stack : error,
       );
-      throw new InternalServerErrorException('Payment gateway is temporarily unavailable. Please try again shortly.');
+      throw new InternalServerErrorException(
+        'Payment gateway is temporarily unavailable. Please try again shortly.',
+      );
     }
     await this.paymentRepository.resetForRetry(payment.id, session.sessionId);
 
@@ -112,11 +119,12 @@ export class PaymentService {
     const event = this.paymentGateway.constructEvent(rawBody, signature);
 
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object;
       const paymentId = this.extractPaymentId(session.metadata);
       if (paymentId === null) return;
 
-      const applied = await this.paymentRepository.markSuccessAndConfirmBooking(paymentId);
+      const applied =
+        await this.paymentRepository.markSuccessAndConfirmBooking(paymentId);
       if (applied) {
         const payment = await this.paymentRepository.findById(paymentId);
         if (payment) {
@@ -131,7 +139,7 @@ export class PaymentService {
     }
 
     if (event.type === 'checkout.session.expired') {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object;
       const paymentId = this.extractPaymentId(session.metadata);
       if (paymentId !== null) {
         await this.paymentRepository.markFailed(paymentId);
@@ -140,7 +148,7 @@ export class PaymentService {
     }
 
     if (event.type === 'payment_intent.payment_failed') {
-      const intent = event.data.object as Stripe.PaymentIntent;
+      const intent = event.data.object;
       const paymentId = this.extractPaymentId(intent.metadata);
       if (paymentId !== null) {
         await this.paymentRepository.markFailed(paymentId);
@@ -148,7 +156,9 @@ export class PaymentService {
     }
   }
 
-  private extractPaymentId(metadata: Stripe.Metadata | null | undefined): bigint | null {
+  private extractPaymentId(
+    metadata: Stripe.Metadata | null | undefined,
+  ): bigint | null {
     const raw = metadata?.paymentId;
     if (!raw) return null;
     try {

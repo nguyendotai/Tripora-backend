@@ -31,4 +31,8 @@ export class CreateExperienceBookingDto {
   @IsOptional()
   @IsString()
   customerPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }

@@ -13,6 +13,7 @@ import {
   ProviderStatus,
   ProviderType,
 } from '@prisma/client';
+import { CouponService } from '../coupon/coupon.service';
 import { ExperienceRepository } from '../experience/experience.repository';
 import { ExperienceScheduleRepository } from '../experience-schedule/experience-schedule.repository';
 import { PaymentService } from '../payment/payment.service';
@@ -35,6 +36,7 @@ export class ExperienceBookingService {
     private readonly experienceScheduleRepository: ExperienceScheduleRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly paymentService: PaymentService,
+    private readonly couponService: CouponService,
   ) {}
 
   /** Public — xem còn chỗ không + báo giá trước khi nhập Customer Info. */
@@ -74,6 +76,12 @@ export class ExperienceBookingService {
       );
     }
 
+    await this.couponService.validateCode(
+      userId,
+      BookingDomain.EXPERIENCE,
+      dto.couponCode,
+    );
+
     const result = await this.experienceBookingRepository.createBooking({
       userId,
       experienceId,
@@ -96,11 +104,20 @@ export class ExperienceBookingService {
       throw new ConflictException('Not enough seats available for this date');
     }
 
+    const { discountAmount } = await this.couponService.applyDiscount({
+      userId,
+      bookingDomain: BookingDomain.EXPERIENCE,
+      bookingId: result.booking.id,
+      subtotal: result.booking.totalPrice,
+      couponCode: dto.couponCode,
+    });
+
     const { checkoutUrl } = await this.paymentService.createForBooking({
       userId,
       bookingDomain: BookingDomain.EXPERIENCE,
       bookingId: result.booking.id,
-      amount: result.booking.totalPrice,
+      amount: result.booking.totalPrice.sub(discountAmount),
+      discountAmount,
       currency: result.booking.currency,
       description: `Experience: ${experience.title} (${dto.departureDate})`,
     });
