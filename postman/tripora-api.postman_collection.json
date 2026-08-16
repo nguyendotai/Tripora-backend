@@ -3335,6 +3335,25 @@
       ]
     },
     {
+      "name": "Flight Seat",
+      "item": [
+        {
+          "name": "List Flight Seats (Public, Select Seat)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flight-seats?scheduleId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-seats"],
+              "query": [{ "key": "scheduleId", "value": "1" }]
+            },
+            "description": "Public. Chi tra ve neu Flight cha da APPROVED. Dung cho buoc 'Select Seat'. Ghe duoc tu dong sinh khi Set Flight Schedule tao 1 ngay MOI (khong sinh lai khi set lai ngay da co) — so luong economy/business lay tu chinh Aircraft cua Flight do."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
