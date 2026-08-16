@@ -40,6 +40,7 @@ model User {
   bookings           HotelBooking[]
   tourBookings       TourBooking[]
   experienceBookings ExperienceBooking[]
+  transportBookings  TransportBooking[]
 
   @@map("users")
 }
@@ -648,6 +649,7 @@ model Vehicle {
 
   provider  Provider            @relation(fields: [providerId], references: [id])
   schedules TransportSchedule[]
+  bookings  TransportBooking[]
 
   @@index([providerId])
   @@map("vehicles")
@@ -681,6 +683,7 @@ model TransportRoute {
 
   provider  Provider            @relation(fields: [providerId], references: [id])
   schedules TransportSchedule[]
+  bookings  TransportBooking[]
 
   @@index([providerId])
   @@map("transport_routes")
@@ -709,4 +712,38 @@ model TransportSchedule {
   @@index([routeId])
   @@index([vehicleId])
   @@map("transport_schedules")
+}
+
+// Mirror TourBooking gần như nguyên vẹn (1 người liên hệ + numberOfPeople, không phải Guest list như
+// HotelBooking, tái dùng BookingStatus có sẵn) — khác biệt duy nhất là thêm vehicleId vì
+// TransportSchedule dùng composite key [routeId, vehicleId, departureDate] thay vì chỉ [tourId, date],
+// nên atomic decrement/cancel phải khớp cả 2 khoá. Snapshot routeOrigin/routeDestination/vehicleName
+// tại thời điểm đặt — không join ngược lấy hiển thị cho booking đã tạo (backend/CLAUDE.md mục 3).
+model TransportBooking {
+  id               BigInt        @id @default(autoincrement())
+  userId           BigInt        @map("user_id")
+  routeId          BigInt        @map("route_id")
+  vehicleId        BigInt        @map("vehicle_id")
+  routeOrigin      String        @map("route_origin")
+  routeDestination String        @map("route_destination")
+  vehicleName      String        @map("vehicle_name")
+  departureDate    DateTime      @map("departure_date") @db.Date
+  numberOfPeople   Int           @map("number_of_people")
+  customerName     String        @map("customer_name")
+  customerEmail    String?       @map("customer_email")
+  customerPhone    String?       @map("customer_phone")
+  totalPrice       Decimal       @map("total_price") @db.Decimal(10, 2)
+  currency         String        @default("VND")
+  status           BookingStatus @default(CONFIRMED)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  user    User           @relation(fields: [userId], references: [id])
+  route   TransportRoute @relation(fields: [routeId], references: [id])
+  vehicle Vehicle        @relation(fields: [vehicleId], references: [id])
+
+  @@index([userId])
+  @@index([routeId])
+  @@index([vehicleId])
+  @@map("transport_bookings")
 }
