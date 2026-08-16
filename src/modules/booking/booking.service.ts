@@ -5,7 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingDomain, BookingStatus, PropertyStatus, Prisma, ProviderStatus, RoomStatus } from '@prisma/client';
+import {
+  BookingDomain,
+  BookingStatus,
+  PropertyStatus,
+  Prisma,
+  ProviderStatus,
+  RoomStatus,
+} from '@prisma/client';
+import { CouponService } from '../coupon/coupon.service';
 import { PaymentService } from '../payment/payment.service';
 import { PropertyRepository } from '../property/property.repository';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -16,7 +24,10 @@ import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ListAllBookingsDto } from './dto/list-all-bookings.dto';
 import { ListProviderBookingsDto } from './dto/list-provider-bookings.dto';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 
 const MAX_NIGHTS = 30;
 
@@ -29,6 +40,7 @@ export class BookingService {
     private readonly roomInventoryRepository: RoomInventoryRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly paymentService: PaymentService,
+    private readonly couponService: CouponService,
   ) {}
 
   /** Public — xem còn phòng không + báo giá trước khi nhập Guest Information. */
@@ -37,11 +49,12 @@ export class BookingService {
     const { room } = await this.getBookableRoom(roomId);
     const { nights, dates } = this.parseStay(dto.checkInDate, dto.checkOutDate);
 
-    const inventoryRows = await this.roomInventoryRepository.findByRoomAndDateRange(
-      roomId,
-      dates[0],
-      dates[dates.length - 1],
-    );
+    const inventoryRows =
+      await this.roomInventoryRepository.findByRoomAndDateRange(
+        roomId,
+        dates[0],
+        dates[dates.length - 1],
+      );
     const inventoryByDate = new Map(
       inventoryRows.map((row) => [row.date.toISOString().slice(0, 10), row]),
     );
@@ -70,11 +83,22 @@ export class BookingService {
   async create(userId: bigint, dto: CreateBookingDto) {
     const roomId = BigInt(dto.roomId);
     const { room, property } = await this.getBookableRoom(roomId);
-    const { checkInDate, checkOutDate, dates } = this.parseStay(dto.checkInDate, dto.checkOutDate);
+    const { checkInDate, checkOutDate, dates } = this.parseStay(
+      dto.checkInDate,
+      dto.checkOutDate,
+    );
 
     if (room.capacity && dto.guests.length > room.capacity) {
-      throw new BadRequestException(`This room fits at most ${room.capacity} guest(s)`);
+      throw new BadRequestException(
+        `This room fits at most ${room.capacity} guest(s)`,
+      );
     }
+
+    await this.couponService.validateCode(
+      userId,
+      BookingDomain.HOTEL,
+      dto.couponCode,
+    );
 
     const result = await this.bookingRepository.createBooking({
       userId,
@@ -93,16 +117,27 @@ export class BookingService {
     if (!result.ok) {
       const dateStr = result.date.toISOString().slice(0, 10);
       if (result.reason === 'MISSING_INVENTORY') {
-        throw new BadRequestException(`This room has no availability set for ${dateStr} yet`);
+        throw new BadRequestException(
+          `This room has no availability set for ${dateStr} yet`,
+        );
       }
       throw new ConflictException(`This room is sold out for ${dateStr}`);
     }
+
+    const { discountAmount } = await this.couponService.applyDiscount({
+      userId,
+      bookingDomain: BookingDomain.HOTEL,
+      bookingId: result.booking.id,
+      subtotal: result.booking.totalPrice,
+      couponCode: dto.couponCode,
+    });
 
     const { checkoutUrl } = await this.paymentService.createForBooking({
       userId,
       bookingDomain: BookingDomain.HOTEL,
       bookingId: result.booking.id,
-      amount: result.booking.totalPrice,
+      amount: result.booking.totalPrice.sub(discountAmount),
+      discountAmount,
       currency: result.booking.currency,
       description: `${property.name} - ${room.name} (${dto.checkInDate} -> ${dto.checkOutDate})`,
     });
@@ -117,13 +152,19 @@ export class BookingService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.bookingRepository.findAll(where, skip, take);
+    const [items, totalItems] = await this.bookingRepository.findAll(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
   /** My Bookings — status? = upcoming | completed | cancelled (bo trong la tat ca). */
   listMine(userId: bigint, status?: 'upcoming' | 'completed' | 'cancelled') {
-    const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    const today = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+    );
     return this.bookingRepository.findManyByUser(userId, status, today);
   }
 
@@ -131,10 +172,14 @@ export class BookingService {
   async listMineAsProvider(userId: bigint, query: ListProviderBookingsDto) {
     const provider = await this.providerRepository.findByUserId(userId);
     if (!provider || provider.status !== ProviderStatus.APPROVED) {
-      throw new ForbiddenException('You need an approved provider profile to do this');
+      throw new ForbiddenException(
+        'You need an approved provider profile to do this',
+      );
     }
 
-    const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    const today = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+    );
     return this.bookingRepository.findManyByProvider(
       provider.id,
       query.propertyId ? BigInt(query.propertyId) : undefined,
@@ -156,13 +201,24 @@ export class BookingService {
       throw new BadRequestException('This booking is already cancelled');
     }
 
-    const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    const today = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+    );
     if (booking.checkInDate <= today) {
-      throw new BadRequestException('Cannot cancel a booking that has already started');
+      throw new BadRequestException(
+        'Cannot cancel a booking that has already started',
+      );
     }
 
-    const dates = this.enumerateNights(booking.checkInDate, booking.checkOutDate);
-    const result = await this.bookingRepository.cancelBooking(bookingId, booking.roomId, dates);
+    const dates = this.enumerateNights(
+      booking.checkInDate,
+      booking.checkOutDate,
+    );
+    const result = await this.bookingRepository.cancelBooking(
+      bookingId,
+      booking.roomId,
+      dates,
+    );
     if (!result.ok) {
       throw new BadRequestException('This booking is already cancelled');
     }
@@ -189,16 +245,27 @@ export class BookingService {
       throw new BadRequestException('checkOutDate must be after checkInDate');
     }
 
-    const nights = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000));
+    const nights = Math.round(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000),
+    );
     if (nights > MAX_NIGHTS) {
-      throw new BadRequestException(`Stay length cannot exceed ${MAX_NIGHTS} nights`);
+      throw new BadRequestException(
+        `Stay length cannot exceed ${MAX_NIGHTS} nights`,
+      );
     }
 
-    return { checkInDate, checkOutDate, nights, dates: this.enumerateNights(checkInDate, checkOutDate) };
+    return {
+      checkInDate,
+      checkOutDate,
+      nights,
+      dates: this.enumerateNights(checkInDate, checkOutDate),
+    };
   }
 
   private enumerateNights(checkInDate: Date, checkOutDate: Date): Date[] {
-    const nights = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000));
+    const nights = Math.round(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (24 * 60 * 60 * 1000),
+    );
     const dates: Date[] = [];
     for (let i = 0; i < nights; i += 1) {
       const date = new Date(checkInDate);

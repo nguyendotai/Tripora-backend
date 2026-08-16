@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CouponModule } from '../coupon/coupon.module';
 import { PaymentModule } from '../payment/payment.module';
 import { ProviderModule } from '../provider/provider.module';
 import { TourModule } from '../tour/tour.module';
@@ -8,7 +9,13 @@ import { TourBookingRepository } from './tour-booking.repository';
 import { TourBookingService } from './tour-booking.service';
 
 @Module({
-  imports: [TourModule, TourScheduleModule, ProviderModule, PaymentModule],
+  imports: [
+    TourModule,
+    TourScheduleModule,
+    ProviderModule,
+    PaymentModule,
+    CouponModule,
+  ],
   controllers: [TourBookingController],
   providers: [TourBookingService, TourBookingRepository],
   exports: [TourBookingRepository],
