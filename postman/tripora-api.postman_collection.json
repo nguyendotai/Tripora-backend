@@ -2352,6 +2352,156 @@
       ]
     },
     {
+      "name": "Vehicle",
+      "item": [
+        {
+          "name": "List Vehicles (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "type", "value": "CAR", "disabled": true }
+              ]
+            },
+            "description": "Public. Chi tra Vehicle da APPROVED."
+          }
+        },
+        {
+          "name": "Get Vehicle By Id (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Public. 404 neu Vehicle chua APPROVED hoac khong ton tai."
+          }
+        },
+        {
+          "name": "List My Vehicles (Transportation Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "mine"],
+              "query": [
+                { "key": "status", "value": "PENDING", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TRANSPORT APPROVED (403 neu khong). Xem duoc Vehicle cua minh bat ke status."
+          }
+        },
+        {
+          "name": "List Vehicles For Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Create Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CAR\",\n  \"name\": \"Toyota Vios 4 cho\",\n  \"model\": \"Vios 2023\",\n  \"capacity\": 4,\n  \"features\": [\"Dieu hoa\", \"WiFi\"],\n  \"licensePlate\": \"51H-123.45\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TRANSPORT APPROVED. Vehicle moi luon o trang thai PENDING, chi hien cong khai sau khi Admin duyet. licensePlate phai duy nhat toan he thong (409 neu trung)."
+          }
+        },
+        {
+          "name": "Update Vehicle",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu Vehicle. Khong tu doi status qua endpoint nay (dung /review, chi Admin)."
+          }
+        },
+        {
+          "name": "Delete Vehicle",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Soft delete. Chi chu Vehicle."
+          }
+        },
+        {
+          "name": "Review Vehicle (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. status: APPROVED hoac REJECTED, reason tuy chon khi tu choi."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
