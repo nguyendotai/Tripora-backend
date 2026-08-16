@@ -2920,6 +2920,214 @@
       ]
     },
     {
+      "name": "Airport",
+      "item": [
+        {
+          "name": "List Airports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/airports?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["airports"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "country", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Public. Filter bang q (khop name/city/code) / country. Tra { items, pagination }."
+          }
+        },
+        {
+          "name": "Get Airport by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/airports/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["airports", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Public. 404 neu khong ton tai/da xoa."
+          }
+        },
+        {
+          "name": "Create Airport (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SGN\",\n  \"name\": \"San bay Quoc te Tan Son Nhat\",\n  \"city\": \"TP.HCM\",\n  \"country\": \"Viet Nam\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/airports",
+              "host": ["{{baseUrl}}"],
+              "path": ["airports"]
+            },
+            "description": "Yeu cau role ADMIN. `code` la ma IATA 3 chu in hoa, duy nhat toan he thong."
+          }
+        },
+        {
+          "name": "Update Airport (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"San bay Quoc te Tan Son Nhat (cap nhat)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/airports/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["airports", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Delete Airport (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/airports/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["airports", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN. Soft delete (204 No Content)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Aircraft",
+      "item": [
+        {
+          "name": "List My Aircraft (Airline)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/aircrafts/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["aircrafts", "mine"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "PENDING", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=FLIGHT APPROVED. Danh sach Aircraft cua chinh minh, moi status."
+          }
+        },
+        {
+          "name": "List Aircraft for Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/aircrafts/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["aircrafts", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Create Aircraft (Airline)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"Airbus A321\",\n  \"registrationCode\": \"VN-A123\",\n  \"economyCapacity\": 180,\n  \"businessCapacity\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/aircrafts",
+              "host": ["{{baseUrl}}"],
+              "path": ["aircrafts"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=FLIGHT APPROVED. Aircraft moi luon PENDING, can Admin duyet truoc khi dung de tao Flight Schedule. `registrationCode` duy nhat toan he thong."
+          }
+        },
+        {
+          "name": "Update Aircraft (Airline)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"economyCapacity\": 174\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/aircrafts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["aircrafts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu Aircraft."
+          }
+        },
+        {
+          "name": "Delete Aircraft (Airline)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/aircrafts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["aircrafts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Soft delete. Chi chu Aircraft."
+          }
+        },
+        {
+          "name": "Review Aircraft (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/aircrafts/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["aircrafts", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
