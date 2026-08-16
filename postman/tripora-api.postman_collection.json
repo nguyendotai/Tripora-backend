@@ -2502,6 +2502,217 @@
       ]
     },
     {
+      "name": "Transport Route",
+      "item": [
+        {
+          "name": "List Transport Routes (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "origin", "value": "", "disabled": true },
+                { "key": "destination", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Public. Chi tra Route da APPROVED. Khach tim theo origin/destination truoc khi chon Vehicle."
+          }
+        },
+        {
+          "name": "Get Transport Route By Id (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Public. 404 neu Route chua APPROVED."
+          }
+        },
+        {
+          "name": "List My Transport Routes (Transportation Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes", "mine"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TRANSPORT APPROVED."
+          }
+        },
+        {
+          "name": "List Transport Routes For Moderation (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes/moderation?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes", "moderation"],
+              "query": [{ "key": "status", "value": "PENDING" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Create Transport Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": \"San bay Tan Son Nhat\",\n  \"destination\": \"Quan 1, TP.HCM\",\n  \"vehicleType\": \"CAR\",\n  \"price\": 250000,\n  \"estimatedDuration\": \"45 phut\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes"]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TRANSPORT APPROVED. Route moi luon PENDING, chi hien cong khai sau khi Admin duyet."
+          }
+        },
+        {
+          "name": "Update Transport Route",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 280000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu Route."
+          }
+        },
+        {
+          "name": "Delete Transport Route",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Soft delete. Chi chu Route."
+          }
+        },
+        {
+          "name": "Review Transport Route (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transport-routes/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-routes", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau role ADMIN."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transport Schedule",
+      "item": [
+        {
+          "name": "List Transport Schedule (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transport-schedules?routeId=1&startDate=2026-09-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-schedules"],
+              "query": [
+                { "key": "routeId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-30" },
+                { "key": "vehicleId", "value": "1", "disabled": true }
+              ]
+            },
+            "description": "Public. Chi tra ve neu Route cha da APPROVED. vehicleId tuy chon de loc theo 1 xe cu the."
+          }
+        },
+        {
+          "name": "List My Transport Schedule (Transportation Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-schedules/mine?routeId=1&startDate=2026-09-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-schedules", "mine"],
+              "query": [
+                { "key": "routeId", "value": "1" },
+                { "key": "startDate", "value": "2026-09-01" },
+                { "key": "endDate", "value": "2026-09-30" }
+              ]
+            },
+            "description": "Yeu cau dang nhap + so huu Route do."
+          }
+        },
+        {
+          "name": "Set Transport Schedule (bulk theo khoang ngay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeId\": \"1\",\n  \"vehicleId\": \"1\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-07\",\n  \"capacity\": 4,\n  \"price\": 250000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transport-schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-schedules"]
+            },
+            "description": "Yeu cau dang nhap + so huu Route va Vehicle (ca 2 phai cung 1 Provider). Upsert theo tung ngay trong khoang (toi da 90 ngay/lan). Chan ha capacity xuong duoi so booked da co."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
