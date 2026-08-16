@@ -9,7 +9,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { BookingDomain, Prisma } from '@prisma/client';
 import Stripe from 'stripe';
+import { CommissionService } from '../commission/commission.service';
 import { NotificationService } from '../notification/notification.service';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
+import { ListMyPaymentsDto } from './dto/list-my-payments.dto';
 import { PaymentGatewayService } from './payment-gateway.service';
 import { PaymentRepository } from './payment.repository';
 
@@ -43,6 +49,7 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGateway: PaymentGatewayService,
     private readonly notificationService: NotificationService,
+    private readonly commissionService: CommissionService,
     private readonly config: ConfigService,
   ) {}
 
@@ -95,6 +102,17 @@ export class PaymentService {
       throw new ForbiddenException('You do not own this payment');
     }
     return payment;
+  }
+
+  /** Transaction history — toan bo Payment cua chinh user (kem Invoice/Refund neu co), phan trang. */
+  async listMine(userId: bigint, query: ListMyPaymentsDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+    const [items, totalItems] = await this.paymentRepository.findManyByUser(
+      userId,
+      skip,
+      take,
+    );
+    return buildPaginated(items, totalItems, page, limit);
   }
 
   /** Tao lai Checkout Session moi cho dung Payment da FAILED (hoac van con PENDING nhung khach
@@ -259,6 +277,12 @@ export class PaymentService {
             'Thanh toán thành công',
             `Đơn đặt chỗ #${payment.bookingId} của bạn đã được xác nhận sau khi thanh toán thành công.`,
           );
+          await this.commissionService.recordForPayment({
+            paymentId: payment.id,
+            bookingDomain: payment.bookingDomain,
+            bookingId: payment.bookingId,
+            amount: payment.amount,
+          });
         }
       }
       return;

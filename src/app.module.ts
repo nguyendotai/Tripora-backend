@@ -33,6 +33,7 @@ import { FlightSeatModule } from './modules/flight-seat/flight-seat.module';
 import { FlightBookingModule } from './modules/flight-booking/flight-booking.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { CouponModule } from './modules/coupon/coupon.module';
+import { CommissionModule } from './modules/commission/commission.module';
 import { BookingExpirationModule } from './modules/booking-expiration/booking-expiration.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
@@ -83,6 +84,7 @@ import { ReviewModule } from './modules/review/review.module';
     FlightBookingModule,
     PaymentModule,
     CouponModule,
+    CommissionModule,
     BookingExpirationModule,
   ],
   controllers: [],

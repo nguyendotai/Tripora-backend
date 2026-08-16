@@ -25,7 +25,11 @@ export class ProviderRepository {
         skip,
         take,
         orderBy: { createdAt: 'desc' },
-        include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+        include: {
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
       }),
       this.prisma.provider.count({ where }),
     ]);
@@ -53,5 +57,12 @@ export class ProviderRepository {
 
   updateStatus(id: bigint, status: ProviderStatus): Promise<Provider> {
     return this.prisma.provider.update({ where: { id }, data: { status } });
+  }
+
+  updateCommissionRate(id: bigint, commissionRate: number): Promise<Provider> {
+    return this.prisma.provider.update({
+      where: { id },
+      data: { commissionRate },
+    });
   }
 }

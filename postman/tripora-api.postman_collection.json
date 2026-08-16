@@ -1033,6 +1033,27 @@
             },
             "description": "Yeu cau role ADMIN. Mo khoa 1 Provider dang SUSPENDED (400 neu khong phai SUSPENDED), tra ve APPROVED. Tu dong gui Notification cho chu ho so."
           }
+        },
+        {
+          "name": "Update Provider Commission Rate (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"commissionRate\": 0.15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/:id/commission-rate",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", ":id", "commission-rate"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "**[V6 vong 2]** Yeu cau role ADMIN. `commissionRate` la so thap phan 0-1 (VD 0.15 = 15%) — mac dinh moi Provider la 0.1 (10%) luc tao. Ap dung cho lan tinh Commission tiep theo (khong hoi to nhung Payment da SUCCESS truoc do)."
+          }
         }
       ]
     },
@@ -3465,6 +3486,23 @@
           }
         },
         {
+          "name": "My Payments (Transaction History)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "mine"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 2]** Yeu cau dang nhap. Toan bo Payment cua chinh minh (moi nhat truoc), kem Invoice/Refund long theo neu co — dung cho trang lich su giao dich cua khach."
+          }
+        },
+        {
           "name": "Get Payment",
           "request": {
             "method": "GET",
@@ -3490,6 +3528,29 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Yeu cau dang nhap + la chu Payment do. Tao lai 1 Checkout Session Stripe moi cho dung Payment da FAILED (hoac PENDING nhung khach bam thu lai) — 400 neu Payment da SUCCESS. Booking van con PENDING_PAYMENT nen van hop le de thanh toan tiep, mien con trong han BOOKING_PAYMENT_EXPIRY_MINUTES."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commission",
+      "item": [
+        {
+          "name": "List Commissions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/commissions?providerId=1&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions"],
+              "query": [
+                { "key": "providerId", "value": "1", "disabled": true },
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 2]** Yeu cau role ADMIN. Sinh tu dong 1 dong / 1 Payment SUCCESS (grossAmount = Payment.amount da tru discount, rate = Provider.commissionRate snapshot tai thoi diem tinh, khong tu hoi to khi rate hoac Booking sau do thay doi). Optional loc theo `providerId`."
           }
         }
       ]

@@ -227,4 +227,27 @@ export class PaymentRepository {
   findRefundById(id: bigint): Promise<Refund | null> {
     return this.prisma.refund.findUnique({ where: { id } });
   }
+
+  /** Transaction history theo User — kem Invoice/Refund long theo neu co, moi nhat truoc. */
+  async findManyByUser(
+    userId: bigint,
+    skip: number,
+    take: number,
+  ): Promise<
+    [
+      Prisma.PaymentGetPayload<{ include: { invoice: true; refund: true } }>[],
+      number,
+    ]
+  > {
+    return this.prisma.$transaction([
+      this.prisma.payment.findMany({
+        where: { userId },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { invoice: true, refund: true },
+      }),
+      this.prisma.payment.count({ where: { userId } }),
+    ]);
+  }
 }
