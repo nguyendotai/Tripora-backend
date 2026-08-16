@@ -26,6 +26,8 @@ import { TransportBookingModule } from './modules/transport-booking/transport-bo
 import { DriverModule } from './modules/driver/driver.module';
 import { AirportModule } from './modules/airport/airport.module';
 import { AircraftModule } from './modules/aircraft/aircraft.module';
+import { FlightModule } from './modules/flight/flight.module';
+import { FlightScheduleModule } from './modules/flight-schedule/flight-schedule.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -68,6 +70,8 @@ import { ReviewModule } from './modules/review/review.module';
     DriverModule,
     AirportModule,
     AircraftModule,
+    FlightModule,
+    FlightScheduleModule,
   ],
   controllers: [],
   providers: [],

@@ -247,6 +247,7 @@ model Provider {
   transportRoutes TransportRoute[]
   drivers         Driver[]
   aircrafts       Aircraft[]
+  flights         Flight[]
 
   @@map("providers")
 }
@@ -807,6 +808,9 @@ model Airport {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
+  departureFlights Flight[] @relation("DepartureAirport")
+  arrivalFlights   Flight[] @relation("ArrivalAirport")
+
   @@index([city])
   @@index([country])
   @@map("airports")
@@ -835,7 +839,76 @@ model Aircraft {
   deletedAt        DateTime?      @map("deleted_at")
 
   provider Provider @relation(fields: [providerId], references: [id])
+  flights  Flight[]
 
   @@index([providerId])
   @@map("aircrafts")
+}
+
+enum FlightStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Flight la entity cap cao nhat cua Airline Provider — mirror TransportRoute (can Admin duyet truoc
+// khi cong khai, tim kiem cong khai theo cap San bay di/den dung luong "Search SGN -> HAN"). Khac
+// TransportRoute: co san aircraftId truc tiep tren Flight (workflow_and_database.md muc 14 da cho
+// field nay ro rang) — khac Transport khong co vehicleId co dinh vi 1 Route co the doi Vehicle theo
+// tung ngay, o day 1 so hieu chuyen bay luon dung 1 loai Aircraft co dinh.
+model Flight {
+  id                 BigInt       @id @default(autoincrement())
+  providerId         BigInt       @map("provider_id")
+  aircraftId         BigInt       @map("aircraft_id")
+  flightNumber       String       @map("flight_number")
+  departureAirportId BigInt       @map("departure_airport_id")
+  arrivalAirportId   BigInt       @map("arrival_airport_id")
+  duration           Int
+  status             FlightStatus @default(PENDING)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  deletedAt          DateTime?    @map("deleted_at")
+
+  provider         Provider         @relation(fields: [providerId], references: [id])
+  aircraft         Aircraft         @relation(fields: [aircraftId], references: [id])
+  departureAirport Airport          @relation("DepartureAirport", fields: [departureAirportId], references: [id])
+  arrivalAirport   Airport          @relation("ArrivalAirport", fields: [arrivalAirportId], references: [id])
+  schedules        FlightSchedule[]
+
+  @@index([providerId])
+  @@index([aircraftId])
+  @@index([departureAirportId])
+  @@index([arrivalAirportId])
+  @@map("flights")
+}
+
+enum FlightScheduleStatus {
+  SCHEDULED
+  CANCELLED
+}
+
+// Mirror TourSchedule (bulk-set theo khoang ngay, toi da 90 ngay) nhung KHONG co cot
+// capacity/available/booked — workflow_and_database.md muc 14 khong liet ke cac cot do cho
+// flight_schedules, vi ton kho ghe duoc quan ly hoan toan qua bang flight_seats rieng (hang muc
+// Backend V5 tiep theo) thay vi 1 bo dem tong nhu Tour/Transport. departureTime/arrivalTime luu
+// dang chuoi "HH:mm" tach rieng khoi departureDate, dung nhu 3 field rieng biet ma tai lieu goc da
+// cho (date/departureTime/arrivalTime), tranh gop thanh 1 DateTime roi phai xu ly timezone khong
+// can thiet cho mock data.
+model FlightSchedule {
+  id            BigInt               @id @default(autoincrement())
+  flightId      BigInt               @map("flight_id")
+  departureDate DateTime             @map("departure_date") @db.Date
+  departureTime String               @map("departure_time")
+  arrivalTime   String               @map("arrival_time")
+  economyPrice  Decimal              @map("economy_price") @db.Decimal(10, 2)
+  businessPrice Decimal?             @map("business_price") @db.Decimal(10, 2)
+  status        FlightScheduleStatus @default(SCHEDULED)
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  flight Flight @relation(fields: [flightId], references: [id])
+
+  @@unique([flightId, departureDate])
+  @@index([flightId])
+  @@map("flight_schedules")
 }
