@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PaymentModule } from '../payment/payment.module';
 import { PropertyModule } from '../property/property.module';
 import { ProviderModule } from '../provider/provider.module';
 import { RoomInventoryModule } from '../room-inventory/room-inventory.module';
@@ -8,8 +9,9 @@ import { BookingRepository } from './booking.repository';
 import { BookingService } from './booking.service';
 
 @Module({
-  imports: [RoomModule, PropertyModule, RoomInventoryModule, ProviderModule],
+  imports: [RoomModule, PropertyModule, RoomInventoryModule, ProviderModule, PaymentModule],
   controllers: [BookingController],
   providers: [BookingService, BookingRepository],
+  exports: [BookingRepository],
 })
 export class BookingModule {}

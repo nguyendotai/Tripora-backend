@@ -221,4 +221,36 @@ export class FlightBookingRepository {
     }
     return { ok: true, booking };
   }
+
+  /** Cron het han giu cho — mirror y het cancelBooking (doi status -> EXPIRED thay vi CANCELLED,
+   * tra tung ghe da dat ve AVAILABLE thay vi tang bo dem — Flight khong dung counter). Chi quet
+   * cac dong PENDING_PAYMENT qua han. */
+  async expirePending(cutoff: Date): Promise<bigint[]> {
+    const candidates = await this.prisma.flightBooking.findMany({
+      where: { status: 'PENDING_PAYMENT', createdAt: { lt: cutoff } },
+      select: { id: true, passengers: { select: { seatId: true } } },
+    });
+
+    const expiredIds: bigint[] = [];
+    for (const candidate of candidates) {
+      const seatIds = candidate.passengers.map((passenger) => passenger.seatId);
+      const applied = await this.prisma.$transaction(async (tx) => {
+        const affected: number = await tx.$executeRaw(
+          Prisma.sql`UPDATE flight_bookings SET status = 'EXPIRED', updated_at = NOW()
+            WHERE id = ${candidate.id} AND status = 'PENDING_PAYMENT'`,
+        );
+        if (affected === 0) return false;
+
+        if (seatIds.length > 0) {
+          await tx.$executeRaw(
+            Prisma.sql`UPDATE flight_seats SET status = 'AVAILABLE', updated_at = NOW()
+              WHERE id IN (${Prisma.join(seatIds)}) AND status = 'BOOKED'`,
+          );
+        }
+        return true;
+      });
+      if (applied) expiredIds.push(candidate.id);
+    }
+    return expiredIds;
+  }
 }

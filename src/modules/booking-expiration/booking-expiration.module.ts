@@ -1,0 +1,21 @@
+import { Module } from '@nestjs/common';
+import { BookingModule } from '../booking/booking.module';
+import { ExperienceBookingModule } from '../experience-booking/experience-booking.module';
+import { FlightBookingModule } from '../flight-booking/flight-booking.module';
+import { PaymentModule } from '../payment/payment.module';
+import { TourBookingModule } from '../tour-booking/tour-booking.module';
+import { TransportBookingModule } from '../transport-booking/transport-booking.module';
+import { BookingExpirationService } from './booking-expiration.service';
+
+@Module({
+  imports: [
+    BookingModule,
+    TourBookingModule,
+    ExperienceBookingModule,
+    TransportBookingModule,
+    FlightBookingModule,
+    PaymentModule,
+  ],
+  providers: [BookingExpirationService],
+})
+export class BookingExpirationModule {}
