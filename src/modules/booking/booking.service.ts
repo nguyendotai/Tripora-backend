@@ -5,7 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, PropertyStatus, Prisma, ProviderStatus, RoomStatus } from '@prisma/client';
+import { BookingDomain, BookingStatus, PropertyStatus, Prisma, ProviderStatus, RoomStatus } from '@prisma/client';
+import { PaymentService } from '../payment/payment.service';
 import { PropertyRepository } from '../property/property.repository';
 import { ProviderRepository } from '../provider/provider.repository';
 import { RoomInventoryRepository } from '../room-inventory/room-inventory.repository';
@@ -27,6 +28,7 @@ export class BookingService {
     private readonly propertyRepository: PropertyRepository,
     private readonly roomInventoryRepository: RoomInventoryRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly paymentService: PaymentService,
   ) {}
 
   /** Public — xem còn phòng không + báo giá trước khi nhập Guest Information. */
@@ -96,7 +98,16 @@ export class BookingService {
       throw new ConflictException(`This room is sold out for ${dateStr}`);
     }
 
-    return result.booking;
+    const { checkoutUrl } = await this.paymentService.createForBooking({
+      userId,
+      bookingDomain: BookingDomain.HOTEL,
+      bookingId: result.booking.id,
+      amount: result.booking.totalPrice,
+      currency: result.booking.currency,
+      description: `${property.name} - ${room.name} (${dto.checkInDate} -> ${dto.checkOutDate})`,
+    });
+
+    return { booking: result.booking, checkoutUrl };
   }
 
   /** Admin — xem toan bo Booking, filter theo status (CONFIRMED/CANCELLED). */

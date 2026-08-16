@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  BookingDomain,
   BookingStatus,
   ExperienceStatus,
   Prisma,
@@ -14,6 +15,7 @@ import {
 } from '@prisma/client';
 import { ExperienceRepository } from '../experience/experience.repository';
 import { ExperienceScheduleRepository } from '../experience-schedule/experience-schedule.repository';
+import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
@@ -32,6 +34,7 @@ export class ExperienceBookingService {
     private readonly experienceRepository: ExperienceRepository,
     private readonly experienceScheduleRepository: ExperienceScheduleRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly paymentService: PaymentService,
   ) {}
 
   /** Public — xem còn chỗ không + báo giá trước khi nhập Customer Info. */
@@ -93,7 +96,16 @@ export class ExperienceBookingService {
       throw new ConflictException('Not enough seats available for this date');
     }
 
-    return result.booking;
+    const { checkoutUrl } = await this.paymentService.createForBooking({
+      userId,
+      bookingDomain: BookingDomain.EXPERIENCE,
+      bookingId: result.booking.id,
+      amount: result.booking.totalPrice,
+      currency: result.booking.currency,
+      description: `Experience: ${experience.title} (${dto.departureDate})`,
+    });
+
+    return { booking: result.booking, checkoutUrl };
   }
 
   /** Admin — xem toan bo ExperienceBooking, filter theo status (CONFIRMED/CANCELLED). */
