@@ -22,6 +22,7 @@ import { ExperienceBookingModule } from './modules/experience-booking/experience
 import { VehicleModule } from './modules/vehicle/vehicle.module';
 import { TransportRouteModule } from './modules/transport-route/transport-route.module';
 import { TransportScheduleModule } from './modules/transport-schedule/transport-schedule.module';
+import { TransportBookingModule } from './modules/transport-booking/transport-booking.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -60,6 +61,7 @@ import { ReviewModule } from './modules/review/review.module';
     VehicleModule,
     TransportRouteModule,
     TransportScheduleModule,
+    TransportBookingModule,
   ],
   controllers: [],
   providers: [],
