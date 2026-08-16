@@ -41,6 +41,7 @@ model User {
   tourBookings       TourBooking[]
   experienceBookings ExperienceBooking[]
   transportBookings  TransportBooking[]
+  flightBookings     FlightBooking[]
 
   @@map("users")
 }
@@ -906,8 +907,9 @@ model FlightSchedule {
   createdAt     DateTime             @default(now()) @map("created_at")
   updatedAt     DateTime             @updatedAt @map("updated_at")
 
-  flight Flight       @relation(fields: [flightId], references: [id])
-  seats  FlightSeat[]
+  flight   Flight          @relation(fields: [flightId], references: [id])
+  seats    FlightSeat[]
+  bookings FlightBooking[]
 
   @@unique([flightId, departureDate])
   @@index([flightId])
@@ -940,9 +942,66 @@ model FlightSeat {
   createdAt  DateTime         @default(now()) @map("created_at")
   updatedAt  DateTime         @updatedAt @map("updated_at")
 
-  schedule FlightSchedule @relation(fields: [scheduleId], references: [id])
+  schedule   FlightSchedule @relation(fields: [scheduleId], references: [id])
+  passengers Passenger[]
 
   @@unique([scheduleId, seatNumber])
   @@index([scheduleId])
   @@map("flight_seats")
+}
+
+// Hang muc cuoi cung Backend V5 — workflow_and_database.md muc 14 chi cho ten bang flight_bookings/
+// passengers, khong co field schema (cung tinh trang duoi-dac-ta cac bang khac cua V5). Mirror
+// TransportBooking (snapshot flightNumber/gio/gia tai thoi diem dat, KHONG bao gio join nguoc lay
+// gia hien thi — dung backend/CLAUDE.md muc 3), nhung khac moi Booking truoc do: chong overbooking
+// bang cach flip tung dong FlightSeat rieng (status AVAILABLE -> BOOKED qua raw UPDATE ... WHERE
+// status = 'AVAILABLE' AND id IN (...), kiem tra affected rows = so ghe yeu cau) thay vi tru 1 bo dem
+// tong nhu Room/Tour/Experience/Transport — dung ca co che nay cho ca 2 chieu tao/huy booking.
+model FlightBooking {
+  id                   BigInt        @id @default(autoincrement())
+  userId               BigInt        @map("user_id")
+  scheduleId           BigInt        @map("schedule_id")
+  flightNumber         String        @map("flight_number")
+  departureAirportCode String        @map("departure_airport_code")
+  arrivalAirportCode   String        @map("arrival_airport_code")
+  departureDate        DateTime      @map("departure_date") @db.Date
+  departureTime        String        @map("departure_time")
+  arrivalTime          String        @map("arrival_time")
+  numberOfPassengers   Int           @map("number_of_passengers")
+  customerName         String        @map("customer_name")
+  customerEmail        String?       @map("customer_email")
+  customerPhone        String?       @map("customer_phone")
+  totalPrice           Decimal       @map("total_price") @db.Decimal(10, 2)
+  currency             String        @default("VND")
+  status               BookingStatus @default(CONFIRMED)
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  user       User           @relation(fields: [userId], references: [id])
+  schedule   FlightSchedule @relation(fields: [scheduleId], references: [id])
+  passengers Passenger[]
+
+  @@index([userId])
+  @@index([scheduleId])
+  @@map("flight_bookings")
+}
+
+// 1 dong / 1 hanh khach / 1 ghe cu the trong 1 FlightBooking — seatId khong unique toan cuc vi 1 ghe
+// (FlightSeat) co the duoc dat lai boi hanh khach khac sau khi booking cu bi huy (seat tra ve
+// AVAILABLE), nen lich su co the co nhieu dong Passenger cung tro ve 1 seatId qua nhieu lan dat khac
+// nhau. idNumber la CCCD/ho chieu — mock data, khong xac thuc that.
+model Passenger {
+  id              BigInt   @id @default(autoincrement())
+  flightBookingId BigInt   @map("flight_booking_id")
+  seatId          BigInt   @map("seat_id")
+  fullName        String   @map("full_name")
+  idNumber        String   @map("id_number")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  booking FlightBooking @relation(fields: [flightBookingId], references: [id])
+  seat    FlightSeat    @relation(fields: [seatId], references: [id])
+
+  @@index([flightBookingId])
+  @@index([seatId])
+  @@map("passengers")
 }

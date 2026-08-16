@@ -28,6 +28,12 @@ export class FlightSeatRepository {
     return this.prisma.flightSeat.findUnique({ where: { id } });
   }
 
+  /** Dung o buoc validate truoc khi tao FlightBooking — xac nhan cac ghe duoc chon co that va
+   * cung 1 scheduleId truoc khi flip status trong transaction. */
+  findByIds(ids: bigint[]): Promise<FlightSeat[]> {
+    return this.prisma.flightSeat.findMany({ where: { id: { in: ids } } });
+  }
+
   async createMany(
     scheduleId: bigint,
     seats: { seatNumber: string; class: SeatClass }[],
