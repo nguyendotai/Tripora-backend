@@ -1,6 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { FlightStatus, ProviderStatus, ProviderType } from '@prisma/client';
+import { AircraftRepository } from '../aircraft/aircraft.repository';
 import { FlightRepository } from '../flight/flight.repository';
+import { generateSeatNumbers } from '../flight-seat/generate-seat-numbers';
+import { FlightSeatRepository } from '../flight-seat/flight-seat.repository';
 import { ProviderRepository } from '../provider/provider.repository';
 import { FlightScheduleRepository } from './flight-schedule.repository';
 import { ListFlightSchedulesDto } from './dto/list-flight-schedules.dto';
@@ -13,6 +16,8 @@ export class FlightScheduleService {
   constructor(
     private readonly flightScheduleRepository: FlightScheduleRepository,
     private readonly flightRepository: FlightRepository,
+    private readonly aircraftRepository: AircraftRepository,
+    private readonly flightSeatRepository: FlightSeatRepository,
     private readonly providerRepository: ProviderRepository,
   ) {}
 
@@ -38,7 +43,7 @@ export class FlightScheduleService {
 
   async set(userId: bigint, dto: SetFlightScheduleDto) {
     const flightId = BigInt(dto.flightId);
-    await this.getOwnedFlight(userId, flightId);
+    const flight = await this.getOwnedFlight(userId, flightId);
 
     const { startDate, endDate } = this.parseRange(dto.startDate, dto.endDate);
     const dayCount =
@@ -46,6 +51,15 @@ export class FlightScheduleService {
     if (dayCount > MAX_RANGE_DAYS) {
       throw new BadRequestException(`Date range cannot exceed ${MAX_RANGE_DAYS} days`);
     }
+
+    // Sinh san danh sach so hieu ghe 1 lan (giong nhau cho moi ngay moi trong khoang, vi cung 1
+    // Aircraft) — chi dung khi tao FlightSchedule MOI, khong sinh lai khi set lai lich cu (ve
+    // flight-schedule.module.ts: FlightSeatModule khong phu thuoc nguoc lai module nay).
+    const aircraft = await this.aircraftRepository.findById(flight.aircraftId);
+    if (!aircraft) {
+      throw new NotFoundException('Aircraft not found');
+    }
+    const seatNumbers = generateSeatNumbers(aircraft.businessCapacity, aircraft.economyCapacity);
 
     const results = [];
     for (let i = 0; i < dayCount; i += 1) {
@@ -73,6 +87,7 @@ export class FlightScheduleService {
           economyPrice: dto.economyPrice,
           businessPrice: dto.businessPrice,
         });
+        await this.flightSeatRepository.createMany(created.id, seatNumbers);
         results.push(created);
       }
     }
