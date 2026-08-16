@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BlogModule } from './modules/blog/blog.module';
@@ -30,6 +31,8 @@ import { FlightModule } from './modules/flight/flight.module';
 import { FlightScheduleModule } from './modules/flight-schedule/flight-schedule.module';
 import { FlightSeatModule } from './modules/flight-seat/flight-seat.module';
 import { FlightBookingModule } from './modules/flight-booking/flight-booking.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { BookingExpirationModule } from './modules/booking-expiration/booking-expiration.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -40,6 +43,7 @@ import { ReviewModule } from './modules/review/review.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
     UserModule,
@@ -76,6 +80,8 @@ import { ReviewModule } from './modules/review/review.module';
     FlightScheduleModule,
     FlightSeatModule,
     FlightBookingModule,
+    PaymentModule,
+    BookingExpirationModule,
   ],
   controllers: [],
   providers: [],

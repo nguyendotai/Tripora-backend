@@ -99,6 +99,43 @@ export class BookingRepository {
     }
   }
 
+  /** Cron het han giu cho — mirror y het cancelBooking, hoan tung dem qua lai (doi status ->
+   * EXPIRED thay vi CANCELLED). Chi quet cac dong PENDING_PAYMENT qua han. */
+  async expirePending(cutoff: Date): Promise<bigint[]> {
+    const candidates = await this.prisma.hotelBooking.findMany({
+      where: { status: BookingStatus.PENDING_PAYMENT, createdAt: { lt: cutoff } },
+      select: { id: true, roomId: true, checkInDate: true, checkOutDate: true },
+    });
+
+    const expiredIds: bigint[] = [];
+    for (const candidate of candidates) {
+      const applied = await this.prisma.$transaction(async (tx) => {
+        const affected = await tx.$executeRaw`
+          UPDATE hotel_bookings SET status = 'EXPIRED', updated_at = NOW()
+          WHERE id = ${candidate.id} AND status = 'PENDING_PAYMENT'
+        `;
+        if (affected === 0) return false;
+
+        const nights = Math.round(
+          (candidate.checkOutDate.getTime() - candidate.checkInDate.getTime()) / (24 * 60 * 60 * 1000),
+        );
+        for (let i = 0; i < nights; i += 1) {
+          const date = new Date(candidate.checkInDate);
+          date.setUTCDate(date.getUTCDate() + i);
+          const dateStr = date.toISOString().slice(0, 10);
+          await tx.$executeRaw`
+            UPDATE room_inventory
+            SET available_rooms = available_rooms + 1, booked_rooms = booked_rooms - 1
+            WHERE room_id = ${candidate.roomId} AND date = ${dateStr} AND booked_rooms >= 1
+          `;
+        }
+        return true;
+      });
+      if (applied) expiredIds.push(candidate.id);
+    }
+    return expiredIds;
+  }
+
   findById(id: bigint): Promise<HotelBooking | null> {
     return this.prisma.hotelBooking.findUnique({ where: { id } });
   }

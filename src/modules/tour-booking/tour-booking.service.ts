@@ -5,7 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, Prisma, ProviderStatus, ProviderType, TourStatus } from '@prisma/client';
+import { BookingDomain, BookingStatus, Prisma, ProviderStatus, ProviderType, TourStatus } from '@prisma/client';
+import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import { TourRepository } from '../tour/tour.repository';
 import { TourScheduleRepository } from '../tour-schedule/tour-schedule.repository';
@@ -23,6 +24,7 @@ export class TourBookingService {
     private readonly tourRepository: TourRepository,
     private readonly tourScheduleRepository: TourScheduleRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly paymentService: PaymentService,
   ) {}
 
   /** Public — xem còn chỗ không + báo giá trước khi nhập Customer Info. */
@@ -71,7 +73,16 @@ export class TourBookingService {
       throw new ConflictException('Not enough seats available for this departure date');
     }
 
-    return result.booking;
+    const { checkoutUrl } = await this.paymentService.createForBooking({
+      userId,
+      bookingDomain: BookingDomain.TOUR,
+      bookingId: result.booking.id,
+      amount: result.booking.totalPrice,
+      currency: result.booking.currency,
+      description: `Tour: ${tour.title} (${dto.departureDate})`,
+    });
+
+    return { booking: result.booking, checkoutUrl };
   }
 
   /** Admin — xem toan bo TourBooking, filter theo status (CONFIRMED/CANCELLED). */

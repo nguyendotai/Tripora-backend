@@ -243,4 +243,34 @@ export class TourBookingRepository {
     }
     return { ok: true, booking };
   }
+
+  /** Cron het han giu cho — mirror y het cancelBooking (doi status -> EXPIRED thay vi CANCELLED,
+   * hoan available/booked cung 1 khuon atomic). Chi quet cac dong PENDING_PAYMENT qua han. */
+  async expirePending(cutoff: Date): Promise<bigint[]> {
+    const candidates = await this.prisma.tourBooking.findMany({
+      where: { status: BookingStatus.PENDING_PAYMENT, createdAt: { lt: cutoff } },
+      select: { id: true, tourId: true, departureDate: true, numberOfPeople: true },
+    });
+
+    const expiredIds: bigint[] = [];
+    for (const candidate of candidates) {
+      const applied = await this.prisma.$transaction(async (tx) => {
+        const affected = await tx.$executeRaw`
+          UPDATE tour_bookings SET status = 'EXPIRED', updated_at = NOW()
+          WHERE id = ${candidate.id} AND status = 'PENDING_PAYMENT'
+        `;
+        if (affected === 0) return false;
+
+        const dateStr = candidate.departureDate.toISOString().slice(0, 10);
+        await tx.$executeRaw`
+          UPDATE tour_schedules
+          SET available = available + ${candidate.numberOfPeople}, booked = booked - ${candidate.numberOfPeople}
+          WHERE tour_id = ${candidate.tourId} AND departure_date = ${dateStr} AND booked >= ${candidate.numberOfPeople}
+        `;
+        return true;
+      });
+      if (applied) expiredIds.push(candidate.id);
+    }
+    return expiredIds;
+  }
 }
