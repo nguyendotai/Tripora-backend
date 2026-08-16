@@ -245,6 +245,7 @@ model Provider {
   tourGuides      TourGuide[]
   vehicles        Vehicle[]
   transportRoutes TransportRoute[]
+  drivers         Driver[]
 
   @@map("providers")
 }
@@ -724,6 +725,7 @@ model TransportBooking {
   userId           BigInt        @map("user_id")
   routeId          BigInt        @map("route_id")
   vehicleId        BigInt        @map("vehicle_id")
+  driverId         BigInt?       @map("driver_id")
   routeOrigin      String        @map("route_origin")
   routeDestination String        @map("route_destination")
   vehicleName      String        @map("vehicle_name")
@@ -741,9 +743,42 @@ model TransportBooking {
   user    User           @relation(fields: [userId], references: [id])
   route   TransportRoute @relation(fields: [routeId], references: [id])
   vehicle Vehicle        @relation(fields: [vehicleId], references: [id])
+  driver  Driver?        @relation(fields: [driverId], references: [id])
 
   @@index([userId])
   @@index([routeId])
   @@index([vehicleId])
+  @@index([driverId])
   @@map("transport_bookings")
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// Hạng mục cuối Backend V4 — workflow_and_database.md chỉ liệt kê tên bảng drivers/driver_assignments,
+// không có field schema (cùng tình trạng dưới-đặc-tả các bảng khác của V4). Khác TourGuide (V3): Driver
+// KHÔNG gắn với 1 User đã đăng ký sẵn — checklist V4 chỉ ghi "quản lý danh sách + gán Driver cho
+// Booking", không có yêu cầu Driver tự đăng nhập/dashboard riêng như "Thêm Role Tour Guide" ở V3 — nên
+// đơn giản hơn: Driver là 1 roster thuần do Transport Operator tự quản lý (mirror Vehicle: CRUD thuần,
+// không cần Admin duyệt vì không hiển thị công khai cho khách). "driver_assignments" được hiện thực
+// bằng 1 cột driverId trực tiếp trên TransportBooking (mirror TourSchedule.guideId) thay vì bảng join
+// riêng — 1 Booking tại 1 thời điểm chỉ cần đúng 1 Driver, không cần metadata phụ để phải tách bảng.
+model Driver {
+  id            BigInt       @id @default(autoincrement())
+  providerId    BigInt       @map("provider_id")
+  name          String
+  phone         String?
+  licenseNumber String?      @map("license_number")
+  status        DriverStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  provider Provider           @relation(fields: [providerId], references: [id])
+  bookings TransportBooking[]
+
+  @@index([providerId])
+  @@map("drivers")
 }

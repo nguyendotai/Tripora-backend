@@ -126,6 +126,7 @@ export class TransportBookingRepository {
           firstName: string | null;
           lastName: string | null;
         };
+        driver: { id: bigint; name: string; phone: string | null } | null;
       })[],
       number,
     ]
@@ -138,6 +139,7 @@ export class TransportBookingRepository {
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { email: true, firstName: true, lastName: true } },
+          driver: { select: { id: true, name: true, phone: true } },
         },
       }),
       this.prisma.transportBooking.count({ where }),
@@ -148,10 +150,13 @@ export class TransportBookingRepository {
     userId: bigint,
     filter: 'upcoming' | 'completed' | 'cancelled' | undefined,
     today: Date,
-  ): Promise<TransportBooking[]> {
+  ): Promise<(TransportBooking & { driver: { id: bigint; name: string; phone: string | null } | null })[]> {
     const where = this.applyStatusFilter({ userId }, filter, today);
     return this.prisma.transportBooking.findMany({
       where,
+      include: {
+        driver: { select: { id: true, name: true, phone: true } },
+      },
       orderBy: { departureDate: 'desc' },
     });
   }
@@ -169,6 +174,7 @@ export class TransportBookingRepository {
         firstName: string | null;
         lastName: string | null;
       };
+      driver: { id: bigint; name: string; phone: string | null } | null;
     })[]
   > {
     const where = this.applyStatusFilter(
@@ -183,8 +189,17 @@ export class TransportBookingRepository {
       where,
       include: {
         user: { select: { email: true, firstName: true, lastName: true } },
+        driver: { select: { id: true, name: true, phone: true } },
       },
       orderBy: { departureDate: 'desc' },
+    });
+  }
+
+  /** Gan/go 1 Driver cho 1 Booking cu the — driverId null = go phan cong. */
+  assignDriver(bookingId: bigint, driverId: bigint | null): Promise<TransportBooking> {
+    return this.prisma.transportBooking.update({
+      where: { id: bookingId },
+      data: { driverId },
     });
   }
 
