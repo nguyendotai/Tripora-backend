@@ -2713,6 +2713,120 @@
       ]
     },
     {
+      "name": "Transport Booking",
+      "item": [
+        {
+          "name": "Check Transport Availability (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings/availability?routeId=1&vehicleId=1&departureDate=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings", "availability"],
+              "query": [
+                { "key": "routeId", "value": "1" },
+                { "key": "vehicleId", "value": "1" },
+                { "key": "departureDate", "value": "2026-09-05" }
+              ]
+            },
+            "description": "Public, khong can dang nhap. Dung cho buoc 'Select Date/Time' truoc khi nhap Customer Info. Tra ve { available, availableSeats, pricePerPerson, currency }."
+          }
+        },
+        {
+          "name": "List All Transport Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "CONFIRMED", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau role ADMIN. Phan trang, filter status tuy chon (CONFIRMED/CANCELLED)."
+          }
+        },
+        {
+          "name": "List My Transport Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings/mine?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings", "mine"],
+              "query": [{ "key": "status", "value": "upcoming", "disabled": true }]
+            },
+            "description": "Yeu cau dang nhap. Chi booking cua chinh minh. status tuy chon: upcoming/completed/cancelled (bo trong la tat ca)."
+          }
+        },
+        {
+          "name": "List Transport Bookings (Transportation Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings/provider?routeId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings", "provider"],
+              "query": [
+                { "key": "routeId", "value": "1", "disabled": true },
+                { "key": "status", "value": "upcoming", "disabled": true }
+              ]
+            },
+            "description": "Yeu cau dang nhap + co Provider profile type=TRANSPORT APPROVED (403 neu khong). Booking cua cac Route minh so huu, tuy chon loc theo 1 routeId."
+          }
+        },
+        {
+          "name": "Create Transport Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeId\": \"1\",\n  \"vehicleId\": \"1\",\n  \"departureDate\": \"2026-09-05\",\n  \"numberOfPeople\": 2,\n  \"customerName\": \"Nguyen Van A\",\n  \"customerEmail\": \"a@example.com\",\n  \"customerPhone\": \"0900000001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings"]
+            },
+            "description": "Yeu cau dang nhap (bat ky USER nao). Tru `available`/cong `booked` cua TransportSchedule atomic trong 1 transaction (chong overbooking), khop ca routeId lan vehicleId. 400 neu Route chua co lich cho Vehicle/ngay do, 409 neu khong du cho. `numberOfPeople` khong duoc vuot `capacity` cua Vehicle (400 neu vuot)."
+          }
+        },
+        {
+          "name": "Cancel Transport Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings", ":id", "cancel"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+          }
+        }
+      ]
+    },
+    {
       "name": "Upload",
       "item": [
         {
