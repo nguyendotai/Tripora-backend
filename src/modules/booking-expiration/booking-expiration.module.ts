@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BookingModule } from '../booking/booking.module';
+import { CouponModule } from '../coupon/coupon.module';
 import { ExperienceBookingModule } from '../experience-booking/experience-booking.module';
 import { FlightBookingModule } from '../flight-booking/flight-booking.module';
 import { PaymentModule } from '../payment/payment.module';
@@ -15,6 +16,7 @@ import { BookingExpirationService } from './booking-expiration.service';
     TransportBookingModule,
     FlightBookingModule,
     PaymentModule,
+    CouponModule,
   ],
   providers: [BookingExpirationService],
 })

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CouponModule } from '../coupon/coupon.module';
 import { PaymentModule } from '../payment/payment.module';
 import { PropertyModule } from '../property/property.module';
 import { ProviderModule } from '../provider/provider.module';
@@ -9,7 +10,14 @@ import { BookingRepository } from './booking.repository';
 import { BookingService } from './booking.service';
 
 @Module({
-  imports: [RoomModule, PropertyModule, RoomInventoryModule, ProviderModule, PaymentModule],
+  imports: [
+    RoomModule,
+    PropertyModule,
+    RoomInventoryModule,
+    ProviderModule,
+    PaymentModule,
+    CouponModule,
+  ],
   controllers: [BookingController],
   providers: [BookingService, BookingRepository],
   exports: [BookingRepository],

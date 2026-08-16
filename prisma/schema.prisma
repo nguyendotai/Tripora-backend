@@ -44,6 +44,8 @@ model User {
   flightBookings     FlightBooking[]
   payments           Payment[]
   invoices           Invoice[]
+  couponRedemptions  CouponRedemption[]
+  refunds            Refund[]
 
   @@map("users")
 }
@@ -230,16 +232,19 @@ enum ProviderStatus {
 // V2 scope: 1 User -> 1 Provider profile (chưa có Organization/multi-member).
 // Sẽ mở rộng thành Organization ở V7 (xem business-rules Provider Marketplace).
 model Provider {
-  id          BigInt         @id @default(autoincrement())
-  userId      BigInt         @unique @map("user_id")
-  type        ProviderType   @default(HOTEL)
-  name        String
-  description String?        @db.Text
-  logo        String?
-  contact     String?
-  status      ProviderStatus @default(PENDING)
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
+  id             BigInt         @id @default(autoincrement())
+  userId         BigInt         @unique @map("user_id")
+  type           ProviderType   @default(HOTEL)
+  name           String
+  description    String?        @db.Text
+  logo           String?
+  contact        String?
+  status         ProviderStatus @default(PENDING)
+  // Ty le hoa hong Platform an tren moi Booking CONFIRMED cua Provider nay (0.1000 = 10%).
+  // Chinh qua PATCH /providers/:id/commission-rate (ADMIN) — moi Provider co the khac nhau.
+  commissionRate Decimal        @default(0.1) @map("commission_rate") @db.Decimal(5, 4)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
   user            User             @relation(fields: [userId], references: [id])
   properties      Property[]
@@ -251,6 +256,7 @@ model Provider {
   drivers         Driver[]
   aircrafts       Aircraft[]
   flights         Flight[]
+  commissions     Commission[]
 
   @@map("providers")
 }
@@ -1042,22 +1048,25 @@ enum PaymentStatus {
 // khao/audit — webhook tra ve dung Payment can cap nhat qua metadata.paymentId gan san luc tao
 // Checkout Session, khong can tra nguoc qua transactionId.
 model Payment {
-  id            BigInt        @id @default(autoincrement())
-  userId        BigInt        @map("user_id")
-  bookingDomain BookingDomain @map("booking_domain")
-  bookingId     BigInt        @map("booking_id")
-  amount        Decimal       @map("amount") @db.Decimal(10, 2)
-  currency      String        @default("VND")
-  provider      String        @default("stripe")
-  method        String?
-  status        PaymentStatus @default(PENDING)
-  transactionId String?       @map("transaction_id")
-  paidAt        DateTime?     @map("paid_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  id              BigInt        @id @default(autoincrement())
+  userId          BigInt        @map("user_id")
+  bookingDomain   BookingDomain @map("booking_domain")
+  bookingId       BigInt        @map("booking_id")
+  amount          Decimal       @map("amount") @db.Decimal(10, 2)
+  discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  currency        String        @default("VND")
+  provider        String        @default("stripe")
+  method          String?
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?       @map("transaction_id")
+  paymentIntentId String?       @map("payment_intent_id")
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user    User     @relation(fields: [userId], references: [id])
   invoice Invoice?
+  refund  Refund?
 
   @@index([userId])
   @@index([bookingDomain, bookingId])
@@ -1068,8 +1077,8 @@ enum InvoiceStatus {
   ISSUED
 }
 
-// Chua co Coupon (V6 vong sau) nen discount/tax luon 0, subtotal = total = Payment.amount —
-// mo rong khi Coupon/Tax duoc them.
+// subtotal = amount + discountAmount (gia niem yet truoc giam gia), discount = discountAmount,
+// total = amount (so tien thuc charge qua Stripe) — dung khi Payment.discountAmount > 0 tu Coupon/Promotion.
 model Invoice {
   id            BigInt        @id @default(autoincrement())
   userId        BigInt        @map("user_id")
@@ -1090,4 +1099,136 @@ model Invoice {
 
   @@index([userId])
   @@map("invoices")
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum PromoStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// applicableDomains: null = ap dung moi domain, khong thi Json array cac gia tri BookingDomain
+// (VD ["TOUR","EXPERIENCE"]) — khong dung Prisma array/relation vi khong can filter/join rieng
+// (database.md muc 7). discountValue: PERCENT la % (0-100), FIXED la so tien VND truc tiep.
+model Coupon {
+  id                BigInt       @id @default(autoincrement())
+  code              String       @unique
+  discountType      DiscountType @map("discount_type")
+  discountValue     Decimal      @map("discount_value") @db.Decimal(10, 2)
+  maxDiscountAmount Decimal?     @map("max_discount_amount") @db.Decimal(10, 2)
+  minOrderAmount    Decimal      @default(0) @map("min_order_amount") @db.Decimal(10, 2)
+  applicableDomains Json?        @map("applicable_domains")
+  usageLimit        Int?         @map("usage_limit")
+  usedCount         Int          @default(0) @map("used_count")
+  perUserLimit      Int?         @map("per_user_limit")
+  validFrom         DateTime     @map("valid_from")
+  validUntil        DateTime     @map("valid_until")
+  status            PromoStatus  @default(ACTIVE)
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  redemptions CouponRedemption[]
+
+  @@map("coupons")
+}
+
+// 1 redemption / 1 Booking (unique bookingDomain+bookingId) — dung de hoan lai usedCount khi
+// Booking PENDING_PAYMENT dung coupon do het han (BookingExpirationService), va de audit lich su.
+model CouponRedemption {
+  id             BigInt        @id @default(autoincrement())
+  couponId       BigInt        @map("coupon_id")
+  userId         BigInt        @map("user_id")
+  bookingDomain  BookingDomain @map("booking_domain")
+  bookingId      BigInt        @map("booking_id")
+  discountAmount Decimal       @map("discount_amount") @db.Decimal(10, 2)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([bookingDomain, bookingId])
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_redemptions")
+}
+
+// Giam gia tu dong, khong can ma — ap dung khi tao Booking neu khach khong nhap couponCode.
+// Khong theo doi usageLimit/redemption (khac Coupon) vi la campaign toan san, khong gioi han theo
+// nguoi dung. priority cao hon duoc chon truoc khi nhieu Promotion cung khop 1 luc.
+model Promotion {
+  id                BigInt       @id @default(autoincrement())
+  name              String
+  discountType      DiscountType @map("discount_type")
+  discountValue     Decimal      @map("discount_value") @db.Decimal(10, 2)
+  maxDiscountAmount Decimal?     @map("max_discount_amount") @db.Decimal(10, 2)
+  minOrderAmount    Decimal      @default(0) @map("min_order_amount") @db.Decimal(10, 2)
+  applicableDomains Json?        @map("applicable_domains")
+  priority          Int          @default(0)
+  validFrom         DateTime     @map("valid_from")
+  validUntil        DateTime     @map("valid_until")
+  status            PromoStatus  @default(ACTIVE)
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  @@map("promotions")
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// 1 Refund / 1 Payment (paymentId unique) — huy Booking CONFIRMED chi tao duoc toi da 1 lan (status
+// guard cua cancelBooking chi cho phep tu CONFIRMED). percent/amount tinh theo REFUND_FULL_DAYS/
+// REFUND_PARTIAL_DAYS luc huy — amount=0 (ngoai moc hoan tien) van tao 1 dong SUCCESS de luu lich
+// su, khong goi Stripe, Booking dung lai o CANCELLED (khong sang REFUND_PENDING). amount>0: PENDING
+// cho toi khi webhook refund.updated (status succeeded) xac nhan that -> SUCCESS (backend/CLAUDE.md
+// muc 3 "Payment Verify" ap dung them cho Refund, khong rieng Payment).
+model Refund {
+  id             BigInt        @id @default(autoincrement())
+  paymentId      BigInt        @unique @map("payment_id")
+  userId         BigInt        @map("user_id")
+  bookingDomain  BookingDomain @map("booking_domain")
+  bookingId      BigInt        @map("booking_id")
+  amount         Decimal       @db.Decimal(10, 2)
+  percent        Int
+  reason         String?       @db.Text
+  status         RefundStatus  @default(PENDING)
+  stripeRefundId String?       @map("stripe_refund_id")
+  processedAt    DateTime?     @map("processed_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([userId])
+  @@index([bookingDomain, bookingId])
+  @@map("refunds")
+}
+
+// Ban ghi audit hoa hong Platform — sinh 1 lan khi Payment SUCCESS (khong tu dieu chinh/hoan lai
+// khi Booking sau do bi Refund, xem CHANGELOG). rate la snapshot Provider.commissionRate tai thoi
+// diem tinh (khong join nguoc de biet rate da thay doi hay chua). grossAmount = Payment.amount
+// (da tru discount, thuc thu qua Stripe).
+model Commission {
+  id             BigInt        @id @default(autoincrement())
+  providerId     BigInt        @map("provider_id")
+  paymentId      BigInt        @unique @map("payment_id")
+  bookingDomain  BookingDomain @map("booking_domain")
+  bookingId      BigInt        @map("booking_id")
+  grossAmount    Decimal       @map("gross_amount") @db.Decimal(10, 2)
+  rate           Decimal       @db.Decimal(5, 4)
+  platformAmount Decimal       @map("platform_amount") @db.Decimal(10, 2)
+  providerAmount Decimal       @map("provider_amount") @db.Decimal(10, 2)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
+  @@map("commissions")
 }

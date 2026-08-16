@@ -5,15 +5,20 @@ import {
   Headers,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ListMyPaymentsDto } from './dto/list-my-payments.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('Payment')
@@ -24,12 +29,27 @@ export class PaymentController {
   /** Stripe goi thang, khong qua JwtAuthGuard — xac thuc bang chu ky HMAC trong header
    * stripe-signature (backend/CLAUDE.md muc 3), khong phai Bearer token. */
   @Post('webhook')
-  async webhook(@Req() req: RawBodyRequest<Request>, @Headers('stripe-signature') signature: string) {
+  async webhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
+  ) {
     if (!req.rawBody || !signature) {
       throw new BadRequestException('Missing raw body or Stripe signature');
     }
     await this.paymentService.handleWebhook(req.rawBody, signature);
     return { received: true };
+  }
+
+  /** Transaction history — dat truoc :id de tranh Nest khop nham "mine" thanh 1 id
+   * (da tung gap bug nay o TourGuideController, xem CHANGELOG). */
+  @Get('mine')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listMine(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListMyPaymentsDto,
+  ) {
+    return this.paymentService.listMine(BigInt(user.id), query);
   }
 
   @Get(':id')

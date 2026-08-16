@@ -14,12 +14,16 @@ import {
   TransportRouteStatus,
   VehicleStatus,
 } from '@prisma/client';
+import { CouponService } from '../coupon/coupon.service';
 import { PaymentService } from '../payment/payment.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import { TransportRouteRepository } from '../transport-route/transport-route.repository';
 import { TransportScheduleRepository } from '../transport-schedule/transport-schedule.repository';
 import { VehicleRepository } from '../vehicle/vehicle.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { CheckTransportAvailabilityDto } from './dto/check-transport-availability.dto';
 import { CreateTransportBookingDto } from './dto/create-transport-booking.dto';
 import { ListAllTransportBookingsDto } from './dto/list-all-transport-bookings.dto';
@@ -35,6 +39,7 @@ export class TransportBookingService {
     private readonly transportScheduleRepository: TransportScheduleRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly paymentService: PaymentService,
+    private readonly couponService: CouponService,
   ) {}
 
   /** Public — xem con cho khong + bao gia truoc khi nhap Customer Info. */
@@ -45,17 +50,20 @@ export class TransportBookingService {
     await this.getBookableVehicle(vehicleId);
     const departureDate = this.parseDate(dto.departureDate);
 
-    const schedule = await this.transportScheduleRepository.findByRouteVehicleAndDate(
-      routeId,
-      vehicleId,
-      departureDate,
-    );
+    const schedule =
+      await this.transportScheduleRepository.findByRouteVehicleAndDate(
+        routeId,
+        vehicleId,
+        departureDate,
+      );
     const available = !!schedule && schedule.available > 0;
 
     return {
       available,
       availableSeats: schedule?.available ?? 0,
-      pricePerPerson: available ? (schedule.price ?? route.price).toString() : null,
+      pricePerPerson: available
+        ? (schedule.price ?? route.price).toString()
+        : null,
       currency: route.currency,
     };
   }
@@ -68,8 +76,16 @@ export class TransportBookingService {
     const departureDate = this.parseDate(dto.departureDate);
 
     if (dto.numberOfPeople > vehicle.capacity) {
-      throw new BadRequestException(`This vehicle fits at most ${vehicle.capacity} people`);
+      throw new BadRequestException(
+        `This vehicle fits at most ${vehicle.capacity} people`,
+      );
     }
+
+    await this.couponService.validateCode(
+      userId,
+      BookingDomain.TRANSPORT,
+      dto.couponCode,
+    );
 
     const result = await this.transportBookingRepository.createBooking({
       userId,
@@ -89,16 +105,29 @@ export class TransportBookingService {
 
     if (!result.ok) {
       if (result.reason === 'MISSING_SCHEDULE') {
-        throw new BadRequestException('This route has no schedule for this vehicle/date yet');
+        throw new BadRequestException(
+          'This route has no schedule for this vehicle/date yet',
+        );
       }
-      throw new ConflictException('Not enough seats available for this departure date');
+      throw new ConflictException(
+        'Not enough seats available for this departure date',
+      );
     }
+
+    const { discountAmount } = await this.couponService.applyDiscount({
+      userId,
+      bookingDomain: BookingDomain.TRANSPORT,
+      bookingId: result.booking.id,
+      subtotal: result.booking.totalPrice,
+      couponCode: dto.couponCode,
+    });
 
     const { checkoutUrl } = await this.paymentService.createForBooking({
       userId,
       bookingDomain: BookingDomain.TRANSPORT,
       bookingId: result.booking.id,
-      amount: result.booking.totalPrice,
+      amount: result.booking.totalPrice.sub(discountAmount),
+      discountAmount,
       currency: result.booking.currency,
       description: `${route.origin} -> ${route.destination} (${dto.departureDate})`,
     });
@@ -113,25 +142,38 @@ export class TransportBookingService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.transportBookingRepository.findAll(where, skip, take);
+    const [items, totalItems] = await this.transportBookingRepository.findAll(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
   /** My Transport Bookings — status? = upcoming | completed | cancelled (bo trong la tat ca). */
   listMine(userId: bigint, status?: 'upcoming' | 'completed' | 'cancelled') {
     const today = this.today();
-    return this.transportBookingRepository.findManyByUser(userId, status, today);
+    return this.transportBookingRepository.findManyByUser(
+      userId,
+      status,
+      today,
+    );
   }
 
   /** Transport Operator — xem TransportBooking cua cac Route minh so huu, optional loc theo 1 Route. */
-  async listMineAsProvider(userId: bigint, query: ListProviderTransportBookingsDto) {
+  async listMineAsProvider(
+    userId: bigint,
+    query: ListProviderTransportBookingsDto,
+  ) {
     const provider = await this.providerRepository.findByUserId(userId);
     if (
       !provider ||
       provider.status !== ProviderStatus.APPROVED ||
       provider.type !== ProviderType.TRANSPORT
     ) {
-      throw new ForbiddenException('You need an approved transport operator profile to do this');
+      throw new ForbiddenException(
+        'You need an approved transport operator profile to do this',
+      );
     }
 
     const today = this.today();
@@ -158,7 +200,9 @@ export class TransportBookingService {
 
     const today = this.today();
     if (booking.departureDate <= today) {
-      throw new BadRequestException('Cannot cancel a booking that has already departed');
+      throw new BadRequestException(
+        'Cannot cancel a booking that has already departed',
+      );
     }
 
     const result = await this.transportBookingRepository.cancelBooking(
@@ -171,6 +215,17 @@ export class TransportBookingService {
     if (!result.ok) {
       throw new BadRequestException('This booking is already cancelled');
     }
+
+    const refundResult = await this.paymentService.createRefundForBooking({
+      userId,
+      bookingDomain: BookingDomain.TRANSPORT,
+      bookingId,
+      startDate: booking.departureDate,
+    });
+    if (refundResult.refundPending) {
+      result.booking.status = BookingStatus.REFUND_PENDING;
+    }
+
     return result.booking;
   }
 

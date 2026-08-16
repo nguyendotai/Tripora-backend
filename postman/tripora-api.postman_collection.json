@@ -1033,6 +1033,27 @@
             },
             "description": "Yeu cau role ADMIN. Mo khoa 1 Provider dang SUSPENDED (400 neu khong phai SUSPENDED), tra ve APPROVED. Tu dong gui Notification cho chu ho so."
           }
+        },
+        {
+          "name": "Update Provider Commission Rate (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"commissionRate\": 0.15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/:id/commission-rate",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", ":id", "commission-rate"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "**[V6 vong 2]** Yeu cau role ADMIN. `commissionRate` la so thap phan 0-1 (VD 0.15 = 15%) — mac dinh moi Provider la 0.1 (10%) luc tao. Ap dung cho lan tinh Commission tiep theo (khong hoi to nhung Payment da SUCCESS truoc do)."
+          }
         }
       ]
     },
@@ -1581,7 +1602,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["tour-bookings"]
             },
-            "description": "Yeu cau dang nhap (bat ky USER nao). Tru `available`/cong `booked` cua TourSchedule atomic trong 1 transaction (chong overbooking). 400 neu Tour chua mo lich ngay do, 409 neu khong du cho. `numberOfPeople` khong duoc vuot `maxParticipants` cua Tour (400 neu vuot). **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT` (khong con `CONFIRMED` ngay), response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan, webhook xac nhan xong Booking moi chuyen `CONFIRMED`."
+            "description": "Yeu cau dang nhap (bat ky USER nao). Tru `available`/cong `booked` cua TourSchedule atomic trong 1 transaction (chong overbooking). 400 neu Tour chua mo lich ngay do, 409 neu khong du cho. `numberOfPeople` khong duoc vuot `maxParticipants` cua Tour (400 neu vuot). **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT` (khong con `CONFIRMED` ngay), response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan, webhook xac nhan xong Booking moi chuyen `CONFIRMED`. **[V6 vong 2]** `couponCode` (optional) — ma giam gia hop le se giam truc tiep vao so tien charge qua Stripe (400 ngay neu ma sai/het han/het luot); khong nhap ma se tu ap Promotion dang chay khop nhat neu co."
           }
         },
         {
@@ -1597,7 +1618,7 @@
               "path": ["tour-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic. **[V6 vong 2]** Neu booking da thanh toan thanh cong, tu dong tao Refund theo % tuy so ngay con lai truoc `departureDate` (>=`REFUND_FULL_DAYS` 100%, >=`REFUND_PARTIAL_DAYS` `REFUND_PARTIAL_PERCENT`%, con lai 0%) — response tra ve status `REFUND_PENDING` neu co hoan tien (cho webhook Stripe xac nhan xong moi sang `REFUNDED`), hoac giu `CANCELLED` neu 0%."
           }
         }
       ]
@@ -2059,7 +2080,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["experience-bookings"]
             },
-            "description": "Yeu cau dang nhap. Tru `available`/cong `booked` atomic. 400 neu chua mo lich, 409 neu khong du cho. **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT`, response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan."
+            "description": "Yeu cau dang nhap. Tru `available`/cong `booked` atomic. 400 neu chua mo lich, 409 neu khong du cho. **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT`, response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan. **[V6 vong 2]** `couponCode` (optional) — mirror Tour Booking."
           }
         },
         {
@@ -2075,7 +2096,7 @@
               "path": ["experience-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking, chi khi con CONFIRMED va departureDate chua toi."
+            "description": "Chi chu booking, chi khi con CONFIRMED va departureDate chua toi. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -2293,7 +2314,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["bookings"]
             },
-            "description": "Yeu cau dang nhap (bat ky USER nao, khong can Provider). Tru availableRooms atomic tung dem trong 1 transaction (UPDATE ... WHERE available_rooms >= 1) — 409 neu het phong 1 trong cac ngay, 400 neu ngay do Provider chua mo ban ton kho hoac so guests vuot capacity cua Room. Booking luu snapshot propertyName/roomName/totalPrice tai thoi diem dat, khong bao gio join nguoc lay gia hien thi. **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT`, response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan."
+            "description": "Yeu cau dang nhap (bat ky USER nao, khong can Provider). Tru availableRooms atomic tung dem trong 1 transaction (UPDATE ... WHERE available_rooms >= 1) — 409 neu het phong 1 trong cac ngay, 400 neu ngay do Provider chua mo ban ton kho hoac so guests vuot capacity cua Room. Booking luu snapshot propertyName/roomName/totalPrice tai thoi diem dat, khong bao gio join nguoc lay gia hien thi. **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT`, response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan. **[V6 vong 2]** `couponCode` (optional) — mirror Tour Booking."
           }
         },
         {
@@ -2346,7 +2367,7 @@
               "path": ["bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Yeu cau dang nhap + la chu booking (403 neu khong). 400 neu booking da CANCELLED hoac checkInDate da toi/qua (khong huy duoc booking dang o/da o). Hoan tra availableRooms/bookedRooms atomic tung dem cung 1 transaction voi viec chuyen status -> CANCELLED."
+            "description": "Yeu cau dang nhap + la chu booking (403 neu khong). 400 neu booking da CANCELLED hoac checkInDate da toi/qua (khong huy duoc booking dang o/da o). Hoan tra availableRooms/bookedRooms atomic tung dem cung 1 transaction voi viec chuyen status -> CANCELLED. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy (tinh theo checkInDate) neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -2805,7 +2826,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["transport-bookings"]
             },
-            "description": "Yeu cau dang nhap (bat ky USER nao). Tru `available`/cong `booked` cua TransportSchedule atomic trong 1 transaction (chong overbooking), khop ca routeId lan vehicleId. 400 neu Route chua co lich cho Vehicle/ngay do, 409 neu khong du cho. `numberOfPeople` khong duoc vuot `capacity` cua Vehicle (400 neu vuot). **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT`, response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan."
+            "description": "Yeu cau dang nhap (bat ky USER nao). Tru `available`/cong `booked` cua TransportSchedule atomic trong 1 transaction (chong overbooking), khop ca routeId lan vehicleId. 400 neu Route chua co lich cho Vehicle/ngay do, 409 neu khong du cho. `numberOfPeople` khong duoc vuot `capacity` cua Vehicle (400 neu vuot). **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT`, response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan. **[V6 vong 2]** `couponCode` (optional) — mirror Tour Booking."
           }
         },
         {
@@ -2821,7 +2842,7 @@
               "path": ["transport-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic."
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan lai `available`/`booked` atomic. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -3422,7 +3443,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["flight-bookings"]
             },
-            "description": "Yeu cau dang nhap (bat ky USER nao). seatIds lay tu GET /flight-seats (buoc Select Seat) — moi seatId ung voi 1 passenger cung vi tri trong mang. Flip tung dong FlightSeat AVAILABLE->BOOKED atomic trong 1 transaction (409 neu 1 trong cac ghe khong con AVAILABLE — SOLD_OUT), 400 neu chon ghe BUSINESS ma lich bay chua co businessPrice. totalPrice tinh tu economyPrice/businessPrice cua FlightSchedule tai thoi diem dat (snapshot). **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT` (khong con `CONFIRMED` ngay), response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan, webhook xac nhan xong Booking moi chuyen `CONFIRMED` va E-ticket (kem passengers) moi xem day du duoc qua GET /flight-bookings/mine."
+            "description": "Yeu cau dang nhap (bat ky USER nao). seatIds lay tu GET /flight-seats (buoc Select Seat) — moi seatId ung voi 1 passenger cung vi tri trong mang. Flip tung dong FlightSeat AVAILABLE->BOOKED atomic trong 1 transaction (409 neu 1 trong cac ghe khong con AVAILABLE — SOLD_OUT), 400 neu chon ghe BUSINESS ma lich bay chua co businessPrice. totalPrice tinh tu economyPrice/businessPrice cua FlightSchedule tai thoi diem dat (snapshot). **[V6]** Booking tao ra o trang thai `PENDING_PAYMENT` (khong con `CONFIRMED` ngay), response tra ve `{ booking, checkoutUrl }` — redirect sang `checkoutUrl` (Stripe Checkout) de hoan tat thanh toan, webhook xac nhan xong Booking moi chuyen `CONFIRMED` va E-ticket (kem passengers) moi xem day du duoc qua GET /flight-bookings/mine. **[V6 vong 2]** `couponCode` (optional) — mirror Tour Booking."
           }
         },
         {
@@ -3436,7 +3457,7 @@
               "path": ["flight-bookings", ":id", "cancel"],
               "variable": [{ "key": "id", "value": "1" }]
             },
-            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan tra tung ghe da dat ve AVAILABLE atomic."
+            "description": "Chi chu booking (403 neu khong), chi khi con CONFIRMED va departureDate chua toi (400 neu da bat dau hoac da huy roi). Hoan tra tung ghe da dat ve AVAILABLE atomic. **[V6 vong 2]** Tu dong tao Refund theo tier ngay huy neu da thanh toan — mirror Cancel Tour Booking."
           }
         }
       ]
@@ -3461,7 +3482,24 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments", "webhook"]
             },
-            "description": "Stripe goi thang khi Checkout Session hoan tat/het han/that bai — khong goi qua Postman thuc te duoc vi can chu ky HMAC that (`stripe-signature`) ma chi Stripe tao ra. Dung Stripe CLI `stripe listen --forward-to <baseUrl>/payments/webhook` de test that. Verify chu ky qua `stripe.webhooks.constructEvent` (backend/CLAUDE.md muc 3 'Payment Verify') — sai chu ky bi tu choi ngay, khong doi status Payment/Booking."
+            "description": "Stripe goi thang khi Checkout Session hoan tat/het han/that bai — khong goi qua Postman thuc te duoc vi can chu ky HMAC that (`stripe-signature`) ma chi Stripe tao ra. Dung Stripe CLI `stripe listen --forward-to <baseUrl>/payments/webhook` de test that. Verify chu ky qua `stripe.webhooks.constructEvent` (backend/CLAUDE.md muc 3 'Payment Verify') — sai chu ky bi tu choi ngay, khong doi status Payment/Booking. **[V6 vong 2]** Cung endpoint nay xu ly them event `refund.updated` (status `succeeded`/`failed`) — chi nguon duy nhat duoc phep chuyen Refund/Booking `REFUND_PENDING` -> `REFUNDED`, ap dung dung luat 'Payment Verify' cho ca Refund."
+          }
+        },
+        {
+          "name": "My Payments (Transaction History)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "mine"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 2]** Yeu cau dang nhap. Toan bo Payment cua chinh minh (moi nhat truoc), kem Invoice/Refund long theo neu co — dung cho trang lich su giao dich cua khach."
           }
         },
         {
@@ -3490,6 +3528,29 @@
               "variable": [{ "key": "id", "value": "1" }]
             },
             "description": "Yeu cau dang nhap + la chu Payment do. Tao lai 1 Checkout Session Stripe moi cho dung Payment da FAILED (hoac PENDING nhung khach bam thu lai) — 400 neu Payment da SUCCESS. Booking van con PENDING_PAYMENT nen van hop le de thanh toan tiep, mien con trong han BOOKING_PAYMENT_EXPIRY_MINUTES."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commission",
+      "item": [
+        {
+          "name": "List Commissions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/commissions?providerId=1&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions"],
+              "query": [
+                { "key": "providerId", "value": "1", "disabled": true },
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 2]** Yeu cau role ADMIN. Sinh tu dong 1 dong / 1 Payment SUCCESS (grossAmount = Payment.amount da tru discount, rate = Provider.commissionRate snapshot tai thoi diem tinh, khong tu hoi to khi rate hoac Booking sau do thay doi). Optional loc theo `providerId`."
           }
         }
       ]

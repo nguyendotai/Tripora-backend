@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CouponModule } from '../coupon/coupon.module';
 import { PaymentModule } from '../payment/payment.module';
 import { ProviderModule } from '../provider/provider.module';
 import { TransportRouteModule } from '../transport-route/transport-route.module';
@@ -9,7 +10,14 @@ import { TransportBookingRepository } from './transport-booking.repository';
 import { TransportBookingService } from './transport-booking.service';
 
 @Module({
-  imports: [TransportRouteModule, VehicleModule, TransportScheduleModule, ProviderModule, PaymentModule],
+  imports: [
+    TransportRouteModule,
+    VehicleModule,
+    TransportScheduleModule,
+    ProviderModule,
+    PaymentModule,
+    CouponModule,
+  ],
   controllers: [TransportBookingController],
   providers: [TransportBookingService, TransportBookingRepository],
   exports: [TransportBookingRepository],
