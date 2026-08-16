@@ -246,6 +246,7 @@ model Provider {
   vehicles        Vehicle[]
   transportRoutes TransportRoute[]
   drivers         Driver[]
+  aircrafts       Aircraft[]
 
   @@map("providers")
 }
@@ -781,4 +782,60 @@ model Driver {
 
   @@index([providerId])
   @@map("drivers")
+}
+
+// ==================== V5 — Flight Booking ====================
+// ProviderType.FLIGHT đã có san tu khi thiet ke schema V2 nhung chua dung toi, y het tinh huong
+// TOUR/ACTIVITY/TRANSPORT truoc phase tuong ung cua chung. Airline Provider tiep tuc tai dung
+// entity Provider (type=FLIGHT) — khong tao entity "Airline" rieng, dung luong apply/duyet/khoa
+// da co. workflow_and_database.md muc 14 liet ke du 9 bang (airlines, aircrafts, airports,
+// flight_routes, flights, flight_schedules, flight_seats, passengers, flight_bookings) nhung chi
+// viet chi tiet field cho flights/flight_schedules/flight_seats — cung tinh trang duoi-dac-ta da
+// gap o tour_guides (V3)/drivers (V4). "airlines" khong can bang rieng (= Provider type=FLIGHT).
+
+// Airport la du lieu tham chieu dung chung, KHONG thuoc so huu cua Provider nao — mirror Destination
+// (Admin quan ly, cong khai chi doc) chu khong mirror Vehicle/Aircraft (Provider tu quan ly). Khac
+// Destination: dung id thay vi slug cho public detail (Airport la du lieu tra cuu/dropdown, khong
+// co trang noi dung cong khai rieng nen khong can URL dep).
+model Airport {
+  id        BigInt    @id @default(autoincrement())
+  code      String    @unique
+  name      String
+  city      String
+  country   String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([city])
+  @@index([country])
+  @@map("airports")
+}
+
+enum AircraftStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Aircraft thuoc so huu Airline Provider — mirror Vehicle het suc (CRUD + Admin duyet, khong
+// hien cong khai rieng le, chi la tai nguyen de gan vao Flight Schedule sau nay).
+// registrationCode (so hieu tau bay, VD "VN-A123") duy nhat toan he thong, cung ly do voi
+// Vehicle.licensePlate — dung nghia thuc te 1 tau bay chi co dung 1 so hieu.
+model Aircraft {
+  id               BigInt         @id @default(autoincrement())
+  providerId       BigInt         @map("provider_id")
+  model            String
+  registrationCode String         @unique @map("registration_code")
+  economyCapacity  Int            @map("economy_capacity")
+  businessCapacity Int            @default(0) @map("business_capacity")
+  status           AircraftStatus @default(PENDING)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+
+  provider Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
+  @@map("aircrafts")
 }

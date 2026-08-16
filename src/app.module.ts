@@ -24,6 +24,8 @@ import { TransportRouteModule } from './modules/transport-route/transport-route.
 import { TransportScheduleModule } from './modules/transport-schedule/transport-schedule.module';
 import { TransportBookingModule } from './modules/transport-booking/transport-booking.module';
 import { DriverModule } from './modules/driver/driver.module';
+import { AirportModule } from './modules/airport/airport.module';
+import { AircraftModule } from './modules/aircraft/aircraft.module';
 import { TravelGuideModule } from './modules/travel-guide/travel-guide.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -64,6 +66,8 @@ import { ReviewModule } from './modules/review/review.module';
     TransportScheduleModule,
     TransportBookingModule,
     DriverModule,
+    AirportModule,
+    AircraftModule,
   ],
   controllers: [],
   providers: [],
