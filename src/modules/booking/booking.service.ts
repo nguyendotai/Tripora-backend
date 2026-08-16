@@ -222,6 +222,17 @@ export class BookingService {
     if (!result.ok) {
       throw new BadRequestException('This booking is already cancelled');
     }
+
+    const refundResult = await this.paymentService.createRefundForBooking({
+      userId,
+      bookingDomain: BookingDomain.HOTEL,
+      bookingId,
+      startDate: booking.checkInDate,
+    });
+    if (refundResult.refundPending) {
+      result.booking.status = BookingStatus.REFUND_PENDING;
+    }
+
     return result.booking;
   }
 

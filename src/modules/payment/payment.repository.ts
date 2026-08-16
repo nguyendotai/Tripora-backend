@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BookingDomain, Payment, Prisma } from '@prisma/client';
+import { BookingDomain, Payment, Prisma, Refund } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface CreatePaymentParams {
@@ -43,6 +43,17 @@ export class PaymentRepository {
     return this.prisma.payment.findUnique({ where: { id } });
   }
 
+  /** Dung luc huy Booking — moi Booking chi co dung 1 Payment (retry cap nhat lai cung 1 dong,
+   * khong tao Payment moi), nen tim theo status SUCCESS la tim dung Payment da thanh toan. */
+  findSuccessfulPaymentByBooking(
+    bookingDomain: BookingDomain,
+    bookingId: bigint,
+  ): Promise<Payment | null> {
+    return this.prisma.payment.findFirst({
+      where: { bookingDomain, bookingId, status: 'SUCCESS' },
+    });
+  }
+
   setTransactionId(id: bigint, transactionId: string): Promise<Payment> {
     return this.prisma.payment.update({
       where: { id },
@@ -64,7 +75,10 @@ export class PaymentRepository {
    * bookingDomain) -> CONFIRMED (khong dong toi inventory — da tru luc tao Booking roi), sinh
    * Invoice — tat ca trong 1 transaction.
    */
-  async markSuccessAndConfirmBooking(paymentId: bigint): Promise<boolean> {
+  async markSuccessAndConfirmBooking(
+    paymentId: bigint,
+    paymentIntentId?: string,
+  ): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findUnique({ where: { id: paymentId } });
       if (!payment || payment.status !== 'PENDING') {
@@ -73,7 +87,7 @@ export class PaymentRepository {
 
       await tx.payment.update({
         where: { id: paymentId },
-        data: { status: 'SUCCESS', paidAt: new Date() },
+        data: { status: 'SUCCESS', paidAt: new Date(), paymentIntentId },
       });
 
       const table = DOMAIN_TABLE[payment.bookingDomain];
@@ -126,5 +140,91 @@ export class PaymentRepository {
       },
       data: { status: 'FAILED' },
     });
+  }
+
+  /**
+   * Chi goi SAU KHI cancelBooking() cua domain da chuyen Booking -> CANCELLED thanh cong.
+   * amount=0 (ngoai moc hoan tien): tao Refund SUCCESS ngay, khong dong gi den Booking (giu
+   * nguyen CANCELLED). amount>0: tao Refund PENDING + flip Booking CANCELLED -> REFUND_PENDING
+   * trong cung 1 transaction, cho webhook refund.updated xac nhan that.
+   */
+  async createRefundRecord(params: {
+    paymentId: bigint;
+    userId: bigint;
+    bookingDomain: BookingDomain;
+    bookingId: bigint;
+    amount: Prisma.Decimal;
+    percent: number;
+    reason?: string;
+  }): Promise<Refund> {
+    return this.prisma.$transaction(async (tx) => {
+      const hasRefund = params.amount.gt(0);
+      const refund = await tx.refund.create({
+        data: {
+          paymentId: params.paymentId,
+          userId: params.userId,
+          bookingDomain: params.bookingDomain,
+          bookingId: params.bookingId,
+          amount: params.amount,
+          percent: params.percent,
+          reason: params.reason,
+          status: hasRefund ? 'PENDING' : 'SUCCESS',
+          processedAt: hasRefund ? null : new Date(),
+        },
+      });
+
+      if (hasRefund) {
+        const table = DOMAIN_TABLE[params.bookingDomain];
+        await tx.$executeRawUnsafe(
+          `UPDATE ${table} SET status = 'REFUND_PENDING', updated_at = NOW() WHERE id = ? AND status = 'CANCELLED'`,
+          params.bookingId,
+        );
+      }
+
+      return refund;
+    });
+  }
+
+  setStripeRefundId(id: bigint, stripeRefundId: string): Promise<Refund> {
+    return this.prisma.refund.update({
+      where: { id },
+      data: { stripeRefundId },
+    });
+  }
+
+  /** Webhook refund.updated (status succeeded) — idempotent qua status guard. Flip Refund ->
+   * SUCCESS + Booking REFUND_PENDING -> REFUNDED trong 1 transaction. */
+  async markRefundSuccess(refundId: bigint): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const refund = await tx.refund.findUnique({ where: { id: refundId } });
+      if (!refund || refund.status !== 'PENDING') {
+        return false;
+      }
+
+      await tx.refund.update({
+        where: { id: refundId },
+        data: { status: 'SUCCESS', processedAt: new Date() },
+      });
+
+      const table = DOMAIN_TABLE[refund.bookingDomain];
+      await tx.$executeRawUnsafe(
+        `UPDATE ${table} SET status = 'REFUNDED', updated_at = NOW() WHERE id = ? AND status = 'REFUND_PENDING'`,
+        refund.bookingId,
+      );
+      return true;
+    });
+  }
+
+  /** Webhook refund.updated (status failed) — Booking giu nguyen REFUND_PENDING, can xu ly thu
+   * cong (khong co UI Admin retry-refund vong nay, gioi han biet truoc). */
+  async markRefundFailed(refundId: bigint): Promise<void> {
+    await this.prisma.refund.updateMany({
+      where: { id: refundId, status: 'PENDING' },
+      data: { status: 'FAILED' },
+    });
+  }
+
+  findRefundById(id: bigint): Promise<Refund | null> {
+    return this.prisma.refund.findUnique({ where: { id } });
   }
 }
