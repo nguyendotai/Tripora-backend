@@ -1,7 +1,12 @@
-import { BadRequestException, ForbiddenException, NotFoundException, Injectable } from '@nestjs/common';
-import { PropertyStatus, ProviderStatus, RoomStatus } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  Injectable,
+} from '@nestjs/common';
+import { PropertyStatus, RoomStatus } from '@prisma/client';
 import { PropertyRepository } from '../property/property.repository';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { RoomRepository } from '../room/room.repository';
 import { ListRoomInventoryDto } from './dto/list-room-inventory.dto';
 import { SetRoomInventoryDto } from './dto/set-room-inventory.dto';
@@ -15,7 +20,7 @@ export class RoomInventoryService {
     private readonly roomInventoryRepository: RoomInventoryRepository,
     private readonly roomRepository: RoomRepository,
     private readonly propertyRepository: PropertyRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
   ) {}
 
   /** Public — chỉ khi Room ACTIVE va Property cha APPROVED. */
@@ -30,27 +35,45 @@ export class RoomInventoryService {
       throw new NotFoundException('Room not found');
     }
 
-    const { startDate, endDate } = this.parseRange(query.startDate, query.endDate);
-    return this.roomInventoryRepository.findByRoomAndDateRange(roomId, startDate, endDate);
+    const { startDate, endDate } = this.parseRange(
+      query.startDate,
+      query.endDate,
+    );
+    return this.roomInventoryRepository.findByRoomAndDateRange(
+      roomId,
+      startDate,
+      endDate,
+    );
   }
 
   async listMine(userId: bigint, query: ListRoomInventoryDto) {
     const roomId = BigInt(query.roomId);
     await this.getOwnedRoom(userId, roomId);
 
-    const { startDate, endDate } = this.parseRange(query.startDate, query.endDate);
-    return this.roomInventoryRepository.findByRoomAndDateRange(roomId, startDate, endDate);
+    const { startDate, endDate } = this.parseRange(
+      query.startDate,
+      query.endDate,
+    );
+    return this.roomInventoryRepository.findByRoomAndDateRange(
+      roomId,
+      startDate,
+      endDate,
+    );
   }
 
   async set(userId: bigint, dto: SetRoomInventoryDto) {
     const roomId = BigInt(dto.roomId);
-    await this.getOwnedRoom(userId, roomId);
+    await this.getOwnedRoomForManage(userId, roomId);
 
     const { startDate, endDate } = this.parseRange(dto.startDate, dto.endDate);
     const dayCount =
-      Math.round((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+      Math.round(
+        (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+      ) + 1;
     if (dayCount > MAX_RANGE_DAYS) {
-      throw new BadRequestException(`Date range cannot exceed ${MAX_RANGE_DAYS} days`);
+      throw new BadRequestException(
+        `Date range cannot exceed ${MAX_RANGE_DAYS} days`,
+      );
     }
 
     const results = [];
@@ -58,7 +81,10 @@ export class RoomInventoryService {
       const date = new Date(startDate);
       date.setUTCDate(date.getUTCDate() + i);
 
-      const existing = await this.roomInventoryRepository.findByRoomAndDate(roomId, date);
+      const existing = await this.roomInventoryRepository.findByRoomAndDate(
+        roomId,
+        date,
+      );
       if (existing) {
         if (dto.totalRooms < existing.bookedRooms) {
           throw new BadRequestException(
@@ -90,21 +116,44 @@ export class RoomInventoryService {
     const startDate = new Date(`${startDateRaw}T00:00:00.000Z`);
     const endDate = new Date(`${endDateRaw}T00:00:00.000Z`);
     if (startDate > endDate) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
     }
     return { startDate, endDate };
   }
 
   private async getOwnedApprovedProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (!provider || provider.status !== ProviderStatus.APPROVED) {
-      throw new ForbiddenException('You need an approved provider profile to do this');
-    }
+    const { provider } =
+      await this.organizationMemberService.requireMembership(userId);
+    return provider;
+  }
+
+  private async getOwnedApprovedProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        permission: 'property:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedRoom(userId: bigint, roomId: bigint) {
     const provider = await this.getOwnedApprovedProvider(userId);
+    const room = await this.roomRepository.findById(roomId);
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+    const property = await this.propertyRepository.findById(room.propertyId);
+    if (!property || property.providerId !== provider.id) {
+      throw new ForbiddenException('You do not own this room');
+    }
+    return room;
+  }
+
+  private async getOwnedRoomForManage(userId: bigint, roomId: bigint) {
+    const provider = await this.getOwnedApprovedProviderForManage(userId);
     const room = await this.roomRepository.findById(roomId);
     if (!room) {
       throw new NotFoundException('Room not found');
