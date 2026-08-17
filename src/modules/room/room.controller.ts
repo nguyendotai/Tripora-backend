@@ -12,7 +12,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -33,7 +36,10 @@ export class RoomController {
   @Get('mine')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ListRoomsDto) {
+  listMine(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListRoomsDto,
+  ) {
     return this.roomService.listMine(BigInt(user.id), BigInt(query.propertyId));
   }
 
