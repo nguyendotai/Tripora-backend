@@ -4,8 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProviderStatus, ProviderType } from '@prisma/client';
-import { ProviderRepository } from '../provider/provider.repository';
+import { ProviderType } from '@prisma/client';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { TourBookingRepository } from '../tour-booking/tour-booking.repository';
 import { TourScheduleRepository } from '../tour-schedule/tour-schedule.repository';
 import { TourRepository } from '../tour/tour.repository';
@@ -20,7 +20,7 @@ import { TourGuideRepository } from './tour-guide.repository';
 export class TourGuideService {
   constructor(
     private readonly tourGuideRepository: TourGuideRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly userRepository: UserRepository,
     private readonly tourRepository: TourRepository,
     private readonly tourScheduleRepository: TourScheduleRepository,
@@ -30,7 +30,7 @@ export class TourGuideService {
   // ---------- Tour Operator ----------
 
   async create(userId: bigint, dto: CreateTourGuideDto) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+    const provider = await this.getOwnedApprovedTourProviderForManage(userId);
 
     const targetUser = await this.userRepository.findByEmail(dto.email);
     if (!targetUser) {
@@ -68,7 +68,7 @@ export class TourGuideService {
 
   /** Gan/go 1 Guide cho 1 ngay khoi hanh cu the — guideId rong = go phan cong. */
   async assign(userId: bigint, dto: AssignGuideDto) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+    const provider = await this.getOwnedApprovedTourProviderForManage(userId);
 
     const scheduleId = BigInt(dto.scheduleId);
     const schedule = await this.tourScheduleRepository.findById(scheduleId);
@@ -128,21 +128,28 @@ export class TourGuideService {
   // ---------- Helpers ----------
 
   private async getOwnedApprovedTourProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TOUR
-    ) {
-      throw new ForbiddenException(
-        'You need an approved tour operator profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedTourProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+        permission: 'tour:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedGuide(userId: bigint, guideId: bigint) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+    const provider = await this.getOwnedApprovedTourProviderForManage(userId);
     const guide = await this.tourGuideRepository.findById(guideId);
     if (!guide) {
       throw new NotFoundException('Guide not found');

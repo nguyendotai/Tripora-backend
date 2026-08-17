@@ -1,10 +1,15 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { FlightStatus, ProviderStatus, ProviderType } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { FlightStatus, ProviderType } from '@prisma/client';
 import { AircraftRepository } from '../aircraft/aircraft.repository';
 import { FlightRepository } from '../flight/flight.repository';
 import { generateSeatNumbers } from '../flight-seat/generate-seat-numbers';
 import { FlightSeatRepository } from '../flight-seat/flight-seat.repository';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { FlightScheduleRepository } from './flight-schedule.repository';
 import { ListFlightSchedulesDto } from './dto/list-flight-schedules.dto';
 import { SetFlightScheduleDto } from './dto/set-flight-schedule.dto';
@@ -18,7 +23,7 @@ export class FlightScheduleService {
     private readonly flightRepository: FlightRepository,
     private readonly aircraftRepository: AircraftRepository,
     private readonly flightSeatRepository: FlightSeatRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
   ) {}
 
   /** Public — chỉ khi Flight đã APPROVED. */
@@ -29,27 +34,45 @@ export class FlightScheduleService {
       throw new NotFoundException('Flight not found');
     }
 
-    const { startDate, endDate } = this.parseRange(query.startDate, query.endDate);
-    return this.flightScheduleRepository.findByFlightAndDateRange(flightId, startDate, endDate);
+    const { startDate, endDate } = this.parseRange(
+      query.startDate,
+      query.endDate,
+    );
+    return this.flightScheduleRepository.findByFlightAndDateRange(
+      flightId,
+      startDate,
+      endDate,
+    );
   }
 
   async listMine(userId: bigint, query: ListFlightSchedulesDto) {
     const flightId = BigInt(query.flightId);
     await this.getOwnedFlight(userId, flightId);
 
-    const { startDate, endDate } = this.parseRange(query.startDate, query.endDate);
-    return this.flightScheduleRepository.findByFlightAndDateRange(flightId, startDate, endDate);
+    const { startDate, endDate } = this.parseRange(
+      query.startDate,
+      query.endDate,
+    );
+    return this.flightScheduleRepository.findByFlightAndDateRange(
+      flightId,
+      startDate,
+      endDate,
+    );
   }
 
   async set(userId: bigint, dto: SetFlightScheduleDto) {
     const flightId = BigInt(dto.flightId);
-    const flight = await this.getOwnedFlight(userId, flightId);
+    const flight = await this.getOwnedFlightForManage(userId, flightId);
 
     const { startDate, endDate } = this.parseRange(dto.startDate, dto.endDate);
     const dayCount =
-      Math.round((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+      Math.round(
+        (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+      ) + 1;
     if (dayCount > MAX_RANGE_DAYS) {
-      throw new BadRequestException(`Date range cannot exceed ${MAX_RANGE_DAYS} days`);
+      throw new BadRequestException(
+        `Date range cannot exceed ${MAX_RANGE_DAYS} days`,
+      );
     }
 
     // Sinh san danh sach so hieu ghe 1 lan (giong nhau cho moi ngay moi trong khoang, vi cung 1
@@ -59,7 +82,10 @@ export class FlightScheduleService {
     if (!aircraft) {
       throw new NotFoundException('Aircraft not found');
     }
-    const seatNumbers = generateSeatNumbers(aircraft.businessCapacity, aircraft.economyCapacity);
+    const seatNumbers = generateSeatNumbers(
+      aircraft.businessCapacity,
+      aircraft.economyCapacity,
+    );
 
     const results = [];
     for (let i = 0; i < dayCount; i += 1) {
@@ -71,12 +97,15 @@ export class FlightScheduleService {
         departureDate,
       );
       if (existing) {
-        const updated = await this.flightScheduleRepository.update(existing.id, {
-          departureTime: dto.departureTime,
-          arrivalTime: dto.arrivalTime,
-          economyPrice: dto.economyPrice,
-          businessPrice: dto.businessPrice,
-        });
+        const updated = await this.flightScheduleRepository.update(
+          existing.id,
+          {
+            departureTime: dto.departureTime,
+            arrivalTime: dto.arrivalTime,
+            economyPrice: dto.economyPrice,
+            businessPrice: dto.businessPrice,
+          },
+        );
         results.push(updated);
       } else {
         const created = await this.flightScheduleRepository.create({
@@ -99,25 +128,38 @@ export class FlightScheduleService {
     const startDate = new Date(`${startDateRaw}T00:00:00.000Z`);
     const endDate = new Date(`${endDateRaw}T00:00:00.000Z`);
     if (startDate > endDate) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
     }
     return { startDate, endDate };
   }
 
-  private async getOwnedApprovedAirlineProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.FLIGHT
-    ) {
-      throw new ForbiddenException('You need an approved airline profile to do this');
+  private async getOwnedFlight(userId: bigint, flightId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.FLIGHT,
+      },
+    );
+    const flight = await this.flightRepository.findById(flightId);
+    if (!flight) {
+      throw new NotFoundException('Flight not found');
     }
-    return provider;
+    if (flight.providerId !== provider.id) {
+      throw new ForbiddenException('You do not own this flight');
+    }
+    return flight;
   }
 
-  private async getOwnedFlight(userId: bigint, flightId: bigint) {
-    const provider = await this.getOwnedApprovedAirlineProvider(userId);
+  private async getOwnedFlightForManage(userId: bigint, flightId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.FLIGHT,
+        permission: 'flight:manage',
+      },
+    );
     const flight = await this.flightRepository.findById(flightId);
     if (!flight) {
       throw new NotFoundException('Flight not found');

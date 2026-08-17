@@ -4,13 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  Prisma,
-  ProviderStatus,
-  ProviderType,
-  VehicleStatus,
-} from '@prisma/client';
+import { Prisma, ProviderType, VehicleStatus } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
@@ -26,6 +22,7 @@ export class VehicleService {
   constructor(
     private readonly vehicleRepository: VehicleRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -93,7 +90,8 @@ export class VehicleService {
   }
 
   async create(userId: bigint, dto: CreateVehicleDto) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
     await this.assertLicensePlateFree(dto.licensePlate);
 
     return this.vehicleRepository.create({
@@ -172,21 +170,29 @@ export class VehicleService {
 
   /** Chỉ Provider type=TRANSPORT đã APPROVED mới quản lý Vehicle — tách domain với các loại đối tác khác. */
   private async getOwnedApprovedTransportProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TRANSPORT
-    ) {
-      throw new ForbiddenException(
-        'You need an approved transportation provider profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TRANSPORT,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedTransportProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TRANSPORT,
+        permission: 'transport:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedVehicle(userId: bigint, vehicleId: bigint) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
     const vehicle = await this.vehicleRepository.findById(vehicleId);
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');

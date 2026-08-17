@@ -4,10 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ProviderStatus, ProviderType } from '@prisma/client';
+import { Prisma, ProviderType } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { AircraftRepository } from './aircraft.repository';
 import { CreateAircraftDto } from './dto/create-aircraft.dto';
 import { ListAircraftDto } from './dto/list-aircraft.dto';
@@ -18,6 +22,7 @@ export class AircraftService {
   constructor(
     private readonly aircraftRepository: AircraftRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -32,7 +37,11 @@ export class AircraftService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.aircraftRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.aircraftRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -45,12 +54,17 @@ export class AircraftService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.aircraftRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.aircraftRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
   async create(userId: bigint, dto: CreateAircraftDto) {
-    const provider = await this.getOwnedApprovedAirlineProvider(userId);
+    const provider =
+      await this.getOwnedApprovedAirlineProviderForManage(userId);
     await this.assertRegistrationCodeFree(dto.registrationCode);
 
     return this.aircraftRepository.create({
@@ -74,9 +88,15 @@ export class AircraftService {
 
     return this.aircraftRepository.update(aircraft.id, {
       ...(dto.model !== undefined && { model: dto.model }),
-      ...(dto.registrationCode !== undefined && { registrationCode: dto.registrationCode }),
-      ...(dto.economyCapacity !== undefined && { economyCapacity: dto.economyCapacity }),
-      ...(dto.businessCapacity !== undefined && { businessCapacity: dto.businessCapacity }),
+      ...(dto.registrationCode !== undefined && {
+        registrationCode: dto.registrationCode,
+      }),
+      ...(dto.economyCapacity !== undefined && {
+        economyCapacity: dto.economyCapacity,
+      }),
+      ...(dto.businessCapacity !== undefined && {
+        businessCapacity: dto.businessCapacity,
+      }),
     });
   }
 
@@ -93,7 +113,9 @@ export class AircraftService {
 
     const updated = await this.aircraftRepository.updateStatus(id, status);
 
-    const provider = await this.providerRepository.findById(aircraft.providerId);
+    const provider = await this.providerRepository.findById(
+      aircraft.providerId,
+    );
     if (provider) {
       const rejectMessage = reason
         ? `Tàu bay "${aircraft.registrationCode}" của bạn đã bị từ chối. Lý do: ${reason}`
@@ -112,27 +134,40 @@ export class AircraftService {
   }
 
   private async assertRegistrationCodeFree(registrationCode: string) {
-    const existing = await this.aircraftRepository.findByRegistrationCode(registrationCode);
+    const existing =
+      await this.aircraftRepository.findByRegistrationCode(registrationCode);
     if (existing) {
-      throw new ConflictException(`Registration code already exists: ${registrationCode}`);
+      throw new ConflictException(
+        `Registration code already exists: ${registrationCode}`,
+      );
     }
   }
 
   /** Chỉ Provider type=FLIGHT đã APPROVED mới quản lý Aircraft — tách domain với các loại đối tác khác. */
   private async getOwnedApprovedAirlineProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.FLIGHT
-    ) {
-      throw new ForbiddenException('You need an approved airline profile to do this');
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.FLIGHT,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedAirlineProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.FLIGHT,
+        permission: 'flight:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedAircraft(userId: bigint, aircraftId: bigint) {
-    const provider = await this.getOwnedApprovedAirlineProvider(userId);
+    const provider =
+      await this.getOwnedApprovedAirlineProviderForManage(userId);
     const aircraft = await this.aircraftRepository.findById(aircraftId);
     if (!aircraft) {
       throw new NotFoundException('Aircraft not found');

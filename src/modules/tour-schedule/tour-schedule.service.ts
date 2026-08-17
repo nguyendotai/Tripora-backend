@@ -1,6 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProviderStatus, ProviderType, TourStatus } from '@prisma/client';
-import { ProviderRepository } from '../provider/provider.repository';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { ProviderType, TourStatus } from '@prisma/client';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { TourRepository } from '../tour/tour.repository';
 import { ListTourSchedulesDto } from './dto/list-tour-schedules.dto';
 import { SetTourScheduleDto } from './dto/set-tour-schedule.dto';
@@ -13,7 +18,7 @@ export class TourScheduleService {
   constructor(
     private readonly tourScheduleRepository: TourScheduleRepository,
     private readonly tourRepository: TourRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
   ) {}
 
   /** Public — chỉ khi Tour đã APPROVED. */
@@ -24,27 +29,45 @@ export class TourScheduleService {
       throw new NotFoundException('Tour not found');
     }
 
-    const { startDate, endDate } = this.parseRange(query.startDate, query.endDate);
-    return this.tourScheduleRepository.findByTourAndDateRange(tourId, startDate, endDate);
+    const { startDate, endDate } = this.parseRange(
+      query.startDate,
+      query.endDate,
+    );
+    return this.tourScheduleRepository.findByTourAndDateRange(
+      tourId,
+      startDate,
+      endDate,
+    );
   }
 
   async listMine(userId: bigint, query: ListTourSchedulesDto) {
     const tourId = BigInt(query.tourId);
     await this.getOwnedTour(userId, tourId);
 
-    const { startDate, endDate } = this.parseRange(query.startDate, query.endDate);
-    return this.tourScheduleRepository.findByTourAndDateRange(tourId, startDate, endDate);
+    const { startDate, endDate } = this.parseRange(
+      query.startDate,
+      query.endDate,
+    );
+    return this.tourScheduleRepository.findByTourAndDateRange(
+      tourId,
+      startDate,
+      endDate,
+    );
   }
 
   async set(userId: bigint, dto: SetTourScheduleDto) {
     const tourId = BigInt(dto.tourId);
-    await this.getOwnedTour(userId, tourId);
+    await this.getOwnedTourForManage(userId, tourId);
 
     const { startDate, endDate } = this.parseRange(dto.startDate, dto.endDate);
     const dayCount =
-      Math.round((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+      Math.round(
+        (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+      ) + 1;
     if (dayCount > MAX_RANGE_DAYS) {
-      throw new BadRequestException(`Date range cannot exceed ${MAX_RANGE_DAYS} days`);
+      throw new BadRequestException(
+        `Date range cannot exceed ${MAX_RANGE_DAYS} days`,
+      );
     }
 
     const results = [];
@@ -52,7 +75,10 @@ export class TourScheduleService {
       const departureDate = new Date(startDate);
       departureDate.setUTCDate(departureDate.getUTCDate() + i);
 
-      const existing = await this.tourScheduleRepository.findByTourAndDate(tourId, departureDate);
+      const existing = await this.tourScheduleRepository.findByTourAndDate(
+        tourId,
+        departureDate,
+      );
       if (existing) {
         if (dto.capacity < existing.booked) {
           throw new BadRequestException(
@@ -84,25 +110,38 @@ export class TourScheduleService {
     const startDate = new Date(`${startDateRaw}T00:00:00.000Z`);
     const endDate = new Date(`${endDateRaw}T00:00:00.000Z`);
     if (startDate > endDate) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
     }
     return { startDate, endDate };
   }
 
-  private async getOwnedApprovedTourProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TOUR
-    ) {
-      throw new ForbiddenException('You need an approved tour operator profile to do this');
+  private async getOwnedTour(userId: bigint, tourId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+      },
+    );
+    const tour = await this.tourRepository.findById(tourId);
+    if (!tour) {
+      throw new NotFoundException('Tour not found');
     }
-    return provider;
+    if (tour.providerId !== provider.id) {
+      throw new ForbiddenException('You do not own this tour');
+    }
+    return tour;
   }
 
-  private async getOwnedTour(userId: bigint, tourId: bigint) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+  private async getOwnedTourForManage(userId: bigint, tourId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+        permission: 'tour:manage',
+      },
+    );
     const tour = await this.tourRepository.findById(tourId);
     if (!tour) {
       throw new NotFoundException('Tour not found');

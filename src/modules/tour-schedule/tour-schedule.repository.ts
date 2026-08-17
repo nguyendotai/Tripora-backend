@@ -28,7 +28,10 @@ export class TourScheduleRepository {
 
   /** Goi khi 1 Guide bi xoa — tranh de lai guideId "ma" tro toi ho so da xoa. */
   async unassignGuideFromAll(guideId: bigint): Promise<void> {
-    await this.prisma.tourSchedule.updateMany({ where: { guideId }, data: { guideId: null } });
+    await this.prisma.tourSchedule.updateMany({
+      where: { guideId },
+      data: { guideId: null },
+    });
   }
 
   findByTourAndDateRange(

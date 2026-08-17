@@ -13,7 +13,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
@@ -37,7 +40,10 @@ export class FlightController {
   @Get('mine')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ListFlightsDto) {
+  listMine(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListFlightsDto,
+  ) {
     return this.flightService.listMine(BigInt(user.id), query);
   }
 
@@ -57,7 +63,10 @@ export class FlightController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateFlightDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateFlightDto,
+  ) {
     return this.flightService.create(BigInt(user.id), dto);
   }
 

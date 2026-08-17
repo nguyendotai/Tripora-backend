@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsIn, IsInt, IsNumberString, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { TourStatus } from '@prisma/client';
 
 export class ListToursDto {

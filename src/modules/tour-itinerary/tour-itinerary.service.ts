@@ -1,6 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ProviderStatus, ProviderType, TourStatus } from '@prisma/client';
-import { ProviderRepository } from '../provider/provider.repository';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, ProviderType, TourStatus } from '@prisma/client';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { TourRepository } from '../tour/tour.repository';
 import { CreateTourItineraryDto } from './dto/create-tour-itinerary.dto';
 import { UpdateTourItineraryDto } from './dto/update-tour-itinerary.dto';
@@ -11,7 +15,7 @@ export class TourItineraryService {
   constructor(
     private readonly tourItineraryRepository: TourItineraryRepository,
     private readonly tourRepository: TourRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
   ) {}
 
   /** Public — chỉ khi Tour cha đã APPROVED. */
@@ -35,7 +39,7 @@ export class TourItineraryService {
 
   async create(userId: bigint, dto: CreateTourItineraryDto) {
     const tourId = BigInt(dto.tourId);
-    await this.getOwnedTour(userId, tourId);
+    await this.getOwnedTourForManage(userId, tourId);
     const dayNumber = await this.tourItineraryRepository.nextDayNumber(tourId);
 
     return this.tourItineraryRepository.create({
@@ -48,7 +52,11 @@ export class TourItineraryService {
     });
   }
 
-  async update(userId: bigint, itineraryId: bigint, dto: UpdateTourItineraryDto) {
+  async update(
+    userId: bigint,
+    itineraryId: bigint,
+    dto: UpdateTourItineraryDto,
+  ) {
     const itinerary = await this.getOwnedItinerary(userId, itineraryId);
 
     return this.tourItineraryRepository.update(itinerary.id, {
@@ -64,20 +72,36 @@ export class TourItineraryService {
     await this.tourItineraryRepository.delete(itinerary.id);
   }
 
-  private async getOwnedApprovedTourProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TOUR
-    ) {
-      throw new ForbiddenException('You need an approved tour operator profile to do this');
-    }
+  private async getOwnedApprovedTourProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+        permission: 'tour:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedTour(userId: bigint, tourId: bigint) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+      },
+    );
+    const tour = await this.tourRepository.findById(tourId);
+    if (!tour) {
+      throw new NotFoundException('Tour not found');
+    }
+    if (tour.providerId !== provider.id) {
+      throw new ForbiddenException('You do not own this tour');
+    }
+    return tour;
+  }
+
+  private async getOwnedTourForManage(userId: bigint, tourId: bigint) {
+    const provider = await this.getOwnedApprovedTourProviderForManage(userId);
     const tour = await this.tourRepository.findById(tourId);
     if (!tour) {
       throw new NotFoundException('Tour not found');
@@ -93,7 +117,7 @@ export class TourItineraryService {
     if (!itinerary) {
       throw new NotFoundException('Tour itinerary day not found');
     }
-    await this.getOwnedTour(userId, itinerary.tourId);
+    await this.getOwnedTourForManage(userId, itinerary.tourId);
     return itinerary;
   }
 }

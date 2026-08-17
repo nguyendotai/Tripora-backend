@@ -4,9 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ExperienceStatus, ProviderStatus, ProviderType } from '@prisma/client';
+import { ExperienceStatus, ProviderType } from '@prisma/client';
 import { ExperienceRepository } from '../experience/experience.repository';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ListExperienceSchedulesDto } from './dto/list-experience-schedules.dto';
 import { SetExperienceScheduleDto } from './dto/set-experience-schedule.dto';
 import { ExperienceScheduleRepository } from './experience-schedule.repository';
@@ -18,7 +18,7 @@ export class ExperienceScheduleService {
   constructor(
     private readonly experienceScheduleRepository: ExperienceScheduleRepository,
     private readonly experienceRepository: ExperienceRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
   ) {}
 
   /** Public — chỉ khi Experience đã APPROVED. */
@@ -57,7 +57,7 @@ export class ExperienceScheduleService {
 
   async set(userId: bigint, dto: SetExperienceScheduleDto) {
     const experienceId = BigInt(dto.experienceId);
-    await this.getOwnedExperience(userId, experienceId);
+    await this.getOwnedExperienceForManage(userId, experienceId);
 
     const { startDate, endDate } = this.parseRange(dto.startDate, dto.endDate);
     const dayCount =
@@ -121,22 +121,34 @@ export class ExperienceScheduleService {
     return { startDate, endDate };
   }
 
-  private async getOwnedApprovedExperienceProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.ACTIVITY
-    ) {
-      throw new ForbiddenException(
-        'You need an approved experience operator profile to do this',
-      );
+  private async getOwnedExperience(userId: bigint, experienceId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.ACTIVITY,
+      },
+    );
+    const experience = await this.experienceRepository.findById(experienceId);
+    if (!experience) {
+      throw new NotFoundException('Experience not found');
     }
-    return provider;
+    if (experience.providerId !== provider.id) {
+      throw new ForbiddenException('You do not own this experience');
+    }
+    return experience;
   }
 
-  private async getOwnedExperience(userId: bigint, experienceId: bigint) {
-    const provider = await this.getOwnedApprovedExperienceProvider(userId);
+  private async getOwnedExperienceForManage(
+    userId: bigint,
+    experienceId: bigint,
+  ) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.ACTIVITY,
+        permission: 'experience:manage',
+      },
+    );
     const experience = await this.experienceRepository.findById(experienceId);
     if (!experience) {
       throw new NotFoundException('Experience not found');

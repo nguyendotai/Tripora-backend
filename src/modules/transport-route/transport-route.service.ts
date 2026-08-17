@@ -3,13 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  Prisma,
-  ProviderStatus,
-  ProviderType,
-  TransportRouteStatus,
-} from '@prisma/client';
+import { Prisma, ProviderType, TransportRouteStatus } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
@@ -25,6 +21,7 @@ export class TransportRouteService {
   constructor(
     private readonly transportRouteRepository: TransportRouteRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -93,7 +90,8 @@ export class TransportRouteService {
   }
 
   async create(userId: bigint, dto: CreateTransportRouteDto) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
 
     return this.transportRouteRepository.create({
       origin: dto.origin,
@@ -157,21 +155,29 @@ export class TransportRouteService {
 
   /** Chỉ Provider type=TRANSPORT đã APPROVED mới quản lý Route — tách domain với các loại đối tác khác. */
   private async getOwnedApprovedTransportProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TRANSPORT
-    ) {
-      throw new ForbiddenException(
-        'You need an approved transportation provider profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TRANSPORT,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedTransportProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TRANSPORT,
+        permission: 'transport:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedRoute(userId: bigint, routeId: bigint) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
     const route = await this.transportRouteRepository.findById(routeId);
     if (!route) {
       throw new NotFoundException('Transport route not found');

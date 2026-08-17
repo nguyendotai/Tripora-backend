@@ -4,14 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  ExperienceStatus,
-  Prisma,
-  ProviderStatus,
-  ProviderType,
-} from '@prisma/client';
+import { ExperienceStatus, Prisma, ProviderType } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
@@ -28,6 +24,7 @@ export class ExperienceService {
   constructor(
     private readonly experienceRepository: ExperienceRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
   ) {}
@@ -102,7 +99,8 @@ export class ExperienceService {
   }
 
   async create(userId: bigint, dto: CreateExperienceDto) {
-    const provider = await this.getOwnedApprovedExperienceProvider(userId);
+    const provider =
+      await this.getOwnedApprovedExperienceProviderForManage(userId);
 
     if (dto.destinationId) {
       const destination = await this.destinationRepository.findById(
@@ -208,21 +206,29 @@ export class ExperienceService {
 
   /** Chỉ Provider type=ACTIVITY đã APPROVED mới quản lý Experience — tách domain với Hotel/Tour. */
   private async getOwnedApprovedExperienceProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.ACTIVITY
-    ) {
-      throw new ForbiddenException(
-        'You need an approved experience operator profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.ACTIVITY,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedExperienceProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.ACTIVITY,
+        permission: 'experience:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedExperience(userId: bigint, experienceId: bigint) {
-    const provider = await this.getOwnedApprovedExperienceProvider(userId);
+    const provider =
+      await this.getOwnedApprovedExperienceProviderForManage(userId);
     const experience = await this.experienceRepository.findById(experienceId);
     if (!experience) {
       throw new NotFoundException('Experience not found');

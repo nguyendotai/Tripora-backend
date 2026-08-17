@@ -1,13 +1,30 @@
 import { OrgMemberRole } from '@prisma/client';
 
-// Vong 1 (V7) — chi chua permission code da dung toi (Property + quan ly Member). Vong sau se
-// them dan permission cho tung domain khac ('tour:manage', 'vehicle:manage', ...) dung luc
-// domain do duoc migrate sang OrganizationMemberService.requireMembership.
-export type Permission = 'property:manage' | 'member:manage' | 'member:view';
+// V7 vong 2 — full 5 domain (Hotel/Tour/Experience/Transport/Flight) da migrate sang
+// OrganizationMemberService.requireMembership. Vong sau (neu can) se them permission rieng
+// cho Booking Staff/Finance Staff xem chi tiet Booking/Payment cua to chuc.
+export type Permission =
+  | 'property:manage'
+  | 'tour:manage'
+  | 'experience:manage'
+  | 'transport:manage'
+  | 'flight:manage'
+  | 'member:manage'
+  | 'member:view';
+
+const MANAGE_PERMISSIONS: Permission[] = [
+  'property:manage',
+  'tour:manage',
+  'experience:manage',
+  'transport:manage',
+  'flight:manage',
+  'member:manage',
+  'member:view',
+];
 
 export const ROLE_PERMISSIONS: Record<OrgMemberRole, Set<Permission>> = {
-  OWNER: new Set(['property:manage', 'member:manage', 'member:view']),
-  MANAGER: new Set(['property:manage', 'member:manage', 'member:view']),
+  OWNER: new Set(MANAGE_PERMISSIONS),
+  MANAGER: new Set(MANAGE_PERMISSIONS),
   BOOKING_STAFF: new Set(['member:view']),
   FINANCE_STAFF: new Set(['member:view']),
 };

@@ -30,7 +30,9 @@ export class TourRepository {
   findBySlug(slug: string): Promise<Tour | null> {
     return this.prisma.tour.findFirst({
       where: { slug, deletedAt: null },
-      include: { destination: { select: { id: true, name: true, slug: true } } },
+      include: {
+        destination: { select: { id: true, name: true, slug: true } },
+      },
     });
   }
 
