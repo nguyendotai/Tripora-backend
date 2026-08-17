@@ -19,7 +19,8 @@
     "prisma:studio": "prisma studio",
     "account:create": "ts-node scripts/create-account.ts",
     "account:update": "ts-node scripts/update-account.ts",
-    "account:delete": "ts-node scripts/delete-account.ts"
+    "account:delete": "ts-node scripts/delete-account.ts",
+    "org-members:backfill": "ts-node scripts/backfill-organization-members.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

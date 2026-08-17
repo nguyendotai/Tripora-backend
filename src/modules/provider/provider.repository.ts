@@ -59,6 +59,26 @@ export class ProviderRepository {
     return this.prisma.provider.update({ where: { id }, data: { status } });
   }
 
+  /** Duyet Provider + tao OrganizationMember(role=OWNER) cho nguoi nop ho so, cung 1 transaction. */
+  async approveAndCreateOwnerMembership(id: bigint): Promise<Provider> {
+    return this.prisma.$transaction(async (tx) => {
+      const provider = await tx.provider.update({
+        where: { id },
+        data: { status: 'APPROVED' },
+      });
+      await tx.organizationMember.upsert({
+        where: { userId: provider.userId },
+        create: {
+          providerId: provider.id,
+          userId: provider.userId,
+          role: 'OWNER',
+        },
+        update: {},
+      });
+      return provider;
+    });
+  }
+
   updateCommissionRate(id: bigint, commissionRate: number): Promise<Provider> {
     return this.prisma.provider.update({
       where: { id },
