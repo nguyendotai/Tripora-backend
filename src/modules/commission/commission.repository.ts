@@ -68,17 +68,26 @@ export class CommissionRepository {
     });
   }
 
+  /** Admin can thay ten/loai Provider, khong chi providerId tho — them include. */
   async findAll(
     where: Prisma.CommissionWhereInput,
     skip: number,
     take: number,
-  ): Promise<[Commission[], number]> {
+  ): Promise<
+    [
+      Prisma.CommissionGetPayload<{
+        include: { provider: { select: { name: true; type: true } } };
+      }>[],
+      number,
+    ]
+  > {
     return this.prisma.$transaction([
       this.prisma.commission.findMany({
         where,
         skip,
         take,
         orderBy: { createdAt: 'desc' },
+        include: { provider: { select: { name: true, type: true } } },
       }),
       this.prisma.commission.count({ where }),
     ]);

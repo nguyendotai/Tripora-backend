@@ -15,6 +15,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { ListAllPaymentsDto } from './dto/list-all-payments.dto';
 import { ListMyPaymentsDto } from './dto/list-my-payments.dto';
 import { PaymentGatewayService } from './payment-gateway.service';
 import { PaymentRepository } from './payment.repository';
@@ -112,6 +113,16 @@ export class PaymentService {
       skip,
       take,
     );
+    return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** Admin — Finance Dashboard: toan bo Payment (kem Invoice/Refund), optional loc theo status. */
+  async listAll(query: ListAllPaymentsDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+    const where: Prisma.PaymentWhereInput = {
+      ...(query.status && { status: query.status }),
+    };
+    const [items, totalItems] = await this.paymentRepository.findAll(where, skip, take);
     return buildPaginated(items, totalItems, page, limit);
   }
 

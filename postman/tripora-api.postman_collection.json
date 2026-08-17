@@ -3486,6 +3486,24 @@
           }
         },
         {
+          "name": "List All Payments (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments?status=SUCCESS&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                { "key": "status", "value": "SUCCESS", "disabled": true },
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 3]** Yeu cau role ADMIN. Toan bo Payment he thong (moi nhat truoc), kem Invoice/Refund long theo + email nguoi mua — dung cho Finance Dashboard (gop ca Payments/Refunds/Invoices vao 1 bang)."
+          }
+        },
+        {
           "name": "My Payments (Transaction History)",
           "request": {
             "method": "GET",
@@ -3551,6 +3569,183 @@
               ]
             },
             "description": "**[V6 vong 2]** Yeu cau role ADMIN. Sinh tu dong 1 dong / 1 Payment SUCCESS (grossAmount = Payment.amount da tru discount, rate = Provider.commissionRate snapshot tai thoi diem tinh, khong tu hoi to khi rate hoac Booking sau do thay doi). Optional loc theo `providerId`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coupon",
+      "item": [
+        {
+          "name": "List Coupons (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/coupons?q=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["coupons"],
+              "query": [
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 3]** Yeu cau role ADMIN — toan bo Coupon khong cong khai (khach ap ma bang cach tu nhap dung code, khong duyet danh sach)."
+          }
+        },
+        {
+          "name": "Get Coupon (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/coupons/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["coupons", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Create Coupon (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WELCOME10\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 10,\n  \"minOrderAmount\": 0,\n  \"usageLimit\": 100,\n  \"perUserLimit\": 1,\n  \"validFrom\": \"2026-01-01T00:00:00.000Z\",\n  \"validUntil\": \"2027-01-01T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/coupons",
+              "host": ["{{baseUrl}}"],
+              "path": ["coupons"]
+            },
+            "description": "code tu dong viet hoa. `discountType` PERCENT (0-100) hoac FIXED (so tien VND). `applicableDomains` bo trong = ap dung moi domain. Trung code -> 409."
+          }
+        },
+        {
+          "name": "Update Coupon (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/coupons/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["coupons", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Coupon (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/coupons/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["coupons", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Promotion",
+      "item": [
+        {
+          "name": "List Promotions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V6 vong 3]** Yeu cau role ADMIN."
+          }
+        },
+        {
+          "name": "Get Promotion (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Create Promotion (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Giam 5% moi Tour thang 9\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 5,\n  \"applicableDomains\": [\"TOUR\"],\n  \"priority\": 1,\n  \"validFrom\": \"2026-09-01T00:00:00.000Z\",\n  \"validUntil\": \"2026-09-30T23:59:59.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/promotions",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions"]
+            },
+            "description": "Tu dong ap khi tao Booking neu khach khong nhap couponCode va don hang khop domain/minOrderAmount/con han — uu tien `priority` cao hon khi nhieu Promotion cung khop."
+          }
+        },
+        {
+          "name": "Update Promotion (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/promotions/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Promotion (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
           }
         }
       ]

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BookingDomain, Coupon, Promotion } from '@prisma/client';
+import { BookingDomain, Coupon, Prisma, Promotion } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface RedeemCouponParams {
@@ -102,5 +102,59 @@ export class CouponRepository {
       return !domains || domains.includes(params.bookingDomain);
     });
     return match ?? null;
+  }
+
+  // ==================== Coupon CRUD (Admin) ====================
+
+  createCoupon(data: Prisma.CouponCreateInput): Promise<Coupon> {
+    return this.prisma.coupon.create({ data });
+  }
+
+  findCouponById(id: bigint): Promise<Coupon | null> {
+    return this.prisma.coupon.findUnique({ where: { id } });
+  }
+
+  updateCoupon(id: bigint, data: Prisma.CouponUpdateInput): Promise<Coupon> {
+    return this.prisma.coupon.update({ where: { id }, data });
+  }
+
+  deleteCoupon(id: bigint): Promise<Coupon> {
+    return this.prisma.coupon.delete({ where: { id } });
+  }
+
+  async findAllCoupons(
+    where: Prisma.CouponWhereInput,
+    skip: number,
+    take: number,
+  ): Promise<[Coupon[], number]> {
+    return this.prisma.$transaction([
+      this.prisma.coupon.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
+      this.prisma.coupon.count({ where }),
+    ]);
+  }
+
+  // ==================== Promotion CRUD (Admin) ====================
+
+  createPromotion(data: Prisma.PromotionCreateInput): Promise<Promotion> {
+    return this.prisma.promotion.create({ data });
+  }
+
+  findPromotionById(id: bigint): Promise<Promotion | null> {
+    return this.prisma.promotion.findUnique({ where: { id } });
+  }
+
+  updatePromotion(id: bigint, data: Prisma.PromotionUpdateInput): Promise<Promotion> {
+    return this.prisma.promotion.update({ where: { id }, data });
+  }
+
+  deletePromotion(id: bigint): Promise<Promotion> {
+    return this.prisma.promotion.delete({ where: { id } });
+  }
+
+  async findAllPromotions(skip: number, take: number): Promise<[Promotion[], number]> {
+    return this.prisma.$transaction([
+      this.prisma.promotion.findMany({ skip, take, orderBy: { createdAt: 'desc' } }),
+      this.prisma.promotion.count(),
+    ]);
   }
 }
