@@ -38,6 +38,7 @@ export class ProviderService {
       description: dto.description,
       logo: dto.logo,
       contact: dto.contact,
+      documents: dto.documents,
     });
   }
 

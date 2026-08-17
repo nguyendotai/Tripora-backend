@@ -243,6 +243,9 @@ model Provider {
   description    String?        @db.Text
   logo           String?
   contact        String?
+  // Mang URL tai lieu kinh doanh (giay phep, chung chi...) upload luc apply — cung co che voi
+  // Property.images/Tour.images, khong query/filter rieng nen dung JSON thay vi bang con.
+  documents      Json?
   status         ProviderStatus @default(PENDING)
   // Ty le hoa hong Platform an tren moi Booking CONFIRMED cua Provider nay (0.1000 = 10%).
   // Chinh qua PATCH /providers/:id/commission-rate (ADMIN) — moi Provider co the khac nhau.
