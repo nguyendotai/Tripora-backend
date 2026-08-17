@@ -1,6 +1,16 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { BookingDomain, Coupon, DiscountType, Prisma } from '@prisma/client';
+import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
 import { CouponRepository } from './coupon.repository';
+import { CreateCouponDto } from './dto/create-coupon.dto';
+import { ListCouponsDto } from './dto/list-coupons.dto';
+import { UpdateCouponDto } from './dto/update-coupon.dto';
 
 export interface ApplyDiscountParams {
   userId: bigint;
@@ -185,5 +195,77 @@ export class CouponService {
 
   private normalize(code: string): string {
     return code.trim().toUpperCase();
+  }
+
+  // ==================== CRUD (Admin) ====================
+
+  /** Admin — xem toan bo Coupon, optional tim theo code. */
+  async listAll(query: ListCouponsDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+    const where: Prisma.CouponWhereInput = query.q
+      ? { code: { contains: query.q.toUpperCase() } }
+      : {};
+    const [items, totalItems] = await this.couponRepository.findAllCoupons(where, skip, take);
+    return buildPaginated(items, totalItems, page, limit);
+  }
+
+  async getById(id: bigint): Promise<Coupon> {
+    const coupon = await this.couponRepository.findCouponById(id);
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+    return coupon;
+  }
+
+  async create(dto: CreateCouponDto): Promise<Coupon> {
+    try {
+      return await this.couponRepository.createCoupon({
+        code: this.normalize(dto.code),
+        discountType: dto.discountType,
+        discountValue: dto.discountValue,
+        maxDiscountAmount: dto.maxDiscountAmount,
+        minOrderAmount: dto.minOrderAmount,
+        applicableDomains: dto.applicableDomains,
+        usageLimit: dto.usageLimit,
+        perUserLimit: dto.perUserLimit,
+        validFrom: new Date(dto.validFrom),
+        validUntil: new Date(dto.validUntil),
+        status: dto.status,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('A coupon with this code already exists');
+      }
+      throw error;
+    }
+  }
+
+  async update(id: bigint, dto: UpdateCouponDto): Promise<Coupon> {
+    await this.getById(id);
+    try {
+      return await this.couponRepository.updateCoupon(id, {
+        ...(dto.code !== undefined && { code: this.normalize(dto.code) }),
+        ...(dto.discountType !== undefined && { discountType: dto.discountType }),
+        ...(dto.discountValue !== undefined && { discountValue: dto.discountValue }),
+        ...(dto.maxDiscountAmount !== undefined && { maxDiscountAmount: dto.maxDiscountAmount }),
+        ...(dto.minOrderAmount !== undefined && { minOrderAmount: dto.minOrderAmount }),
+        ...(dto.applicableDomains !== undefined && { applicableDomains: dto.applicableDomains }),
+        ...(dto.usageLimit !== undefined && { usageLimit: dto.usageLimit }),
+        ...(dto.perUserLimit !== undefined && { perUserLimit: dto.perUserLimit }),
+        ...(dto.validFrom !== undefined && { validFrom: new Date(dto.validFrom) }),
+        ...(dto.validUntil !== undefined && { validUntil: new Date(dto.validUntil) }),
+        ...(dto.status !== undefined && { status: dto.status }),
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('A coupon with this code already exists');
+      }
+      throw error;
+    }
+  }
+
+  async remove(id: bigint): Promise<void> {
+    await this.getById(id);
+    await this.couponRepository.deleteCoupon(id);
   }
 }

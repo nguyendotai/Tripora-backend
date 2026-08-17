@@ -250,4 +250,30 @@ export class PaymentRepository {
       this.prisma.payment.count({ where: { userId } }),
     ]);
   }
+
+  /** Admin — toan bo Payment moi Booking domain, kem Invoice/Refund + email nguoi mua de hien thi
+   * (mirror findManyByUser, bo filter userId + them include user email). */
+  async findAll(
+    where: Prisma.PaymentWhereInput,
+    skip: number,
+    take: number,
+  ): Promise<
+    [
+      Prisma.PaymentGetPayload<{
+        include: { invoice: true; refund: true; user: { select: { email: true } } };
+      }>[],
+      number,
+    ]
+  > {
+    return this.prisma.$transaction([
+      this.prisma.payment.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { invoice: true, refund: true, user: { select: { email: true } } },
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+  }
 }
