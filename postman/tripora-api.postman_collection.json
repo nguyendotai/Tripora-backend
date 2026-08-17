@@ -931,14 +931,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Khach san Bien Xanh\",\n  \"type\": \"HOTEL\",\n  \"description\": \"Chuyen cung cap phong khach san ven bien\",\n  \"contact\": \"0901234567\"\n}"
+              "raw": "{\n  \"name\": \"Khach san Bien Xanh\",\n  \"type\": \"HOTEL\",\n  \"description\": \"Chuyen cung cap phong khach san ven bien\",\n  \"contact\": \"0901234567\",\n  \"documents\": [\"https://res.cloudinary.com/tripora/image/upload/v1/license.jpg\"]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/providers/apply",
               "host": ["{{baseUrl}}"],
               "path": ["providers", "apply"]
             },
-            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). `type` tuy chon: HOTEL (mac dinh, V2), TOUR (V3, de tao Tour), hoac ACTIVITY (V3, de tao Experience) — TRANSPORT/FLIGHT du co trong enum nhung chua co domain nao dung toi. Trang thai ban dau PENDING."
+            "description": "Yeu cau dang nhap. Moi User chi duoc 1 ho so Provider (409 neu da co). `type` tuy chon: HOTEL/TOUR/ACTIVITY/TRANSPORT/FLIGHT (mac dinh HOTEL). `documents` tuy chon — mang URL anh/scan tai lieu kinh doanh, upload truoc qua `POST /uploads/image` roi truyen URL vao day. Trang thai ban dau PENDING."
           }
         },
         {
