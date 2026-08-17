@@ -36,6 +36,7 @@ model User {
   trips              Trip[]
   notifications      Notification[]
   provider           Provider?
+  organizationMember OrganizationMember?
   tourGuide          TourGuide?
   bookings           HotelBooking[]
   tourBookings       TourBooking[]
@@ -229,8 +230,11 @@ enum ProviderStatus {
   SUSPENDED
 }
 
-// V2 scope: 1 User -> 1 Provider profile (chưa có Organization/multi-member).
-// Sẽ mở rộng thành Organization ở V7 (xem business-rules Provider Marketplace).
+// V2: Provider.userId la nguoi nop ho so goc. Tu V7 vong 1, quyen thao tac thuc te
+// di qua OrganizationMember (nhieu nhan su/role trong 1 Provider) thay vi userId 1:1 nay —
+// Provider.userId van giu lai chi de biet "ai la nguoi nop ho so ban dau", khong con la
+// nguon xac thuc quyen han duy nhat. Khong doi ten bang/cot sang Organization (xem CHANGELOG
+// vong 1 — rename thuan tuy, khong tang gia tri chuc nang).
 model Provider {
   id             BigInt         @id @default(autoincrement())
   userId         BigInt         @unique @map("user_id")
@@ -246,19 +250,46 @@ model Provider {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  user            User             @relation(fields: [userId], references: [id])
-  properties      Property[]
-  tours           Tour[]
-  experiences     Experience[]
-  tourGuides      TourGuide[]
-  vehicles        Vehicle[]
-  transportRoutes TransportRoute[]
-  drivers         Driver[]
-  aircrafts       Aircraft[]
-  flights         Flight[]
-  commissions     Commission[]
+  user                User                 @relation(fields: [userId], references: [id])
+  organizationMembers OrganizationMember[]
+  properties          Property[]
+  tours               Tour[]
+  experiences         Experience[]
+  tourGuides          TourGuide[]
+  vehicles            Vehicle[]
+  transportRoutes     TransportRoute[]
+  drivers             Driver[]
+  aircrafts           Aircraft[]
+  flights             Flight[]
+  commissions         Commission[]
 
   @@map("providers")
+}
+
+enum OrgMemberRole {
+  OWNER
+  MANAGER
+  BOOKING_STAFF
+  FINANCE_STAFF
+}
+
+// V7 vong 1 — RBAC/multi-tenant. Thay the Provider.userId 1:1 cu lam nguon xac thuc quyen han.
+// 1 User toi da 1 membership TOAN HE THONG (userId @unique) — mirror TourGuide.userId, tranh
+// phai lam "active organization" selector cho vong 1 (V7 DoD khong yeu cau 1 nguoi thuoc nhieu
+// to chuc). Hard delete khi remove — cung ly do TourGuide (soft-delete tung gay bug unique
+// constraint khi tao lai).
+model OrganizationMember {
+  id         BigInt        @id @default(autoincrement())
+  providerId BigInt        @map("provider_id")
+  userId     BigInt        @unique @map("user_id")
+  role       OrgMemberRole
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([providerId])
+  @@map("organization_members")
 }
 
 enum PropertyStatus {

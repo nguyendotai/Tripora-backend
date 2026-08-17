@@ -1,7 +1,11 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, PropertyStatus, ProviderStatus, RoomStatus } from '@prisma/client';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, PropertyStatus, RoomStatus } from '@prisma/client';
 import { PropertyRepository } from '../property/property.repository';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomRepository } from './room.repository';
@@ -11,7 +15,7 @@ export class RoomService {
   constructor(
     private readonly roomRepository: RoomRepository,
     private readonly propertyRepository: PropertyRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
   ) {}
 
   /** Public — chỉ Room ACTIVE của 1 Property đã APPROVED. */
@@ -39,7 +43,7 @@ export class RoomService {
 
   async create(userId: bigint, dto: CreateRoomDto) {
     const propertyId = BigInt(dto.propertyId);
-    await this.getOwnedProperty(userId, propertyId);
+    await this.getOwnedPropertyForManage(userId, propertyId);
 
     return this.roomRepository.create({
       name: dto.name,
@@ -76,10 +80,18 @@ export class RoomService {
   }
 
   private async getOwnedApprovedProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (!provider || provider.status !== ProviderStatus.APPROVED) {
-      throw new ForbiddenException('You need an approved provider profile to do this');
-    }
+    const { provider } =
+      await this.organizationMemberService.requireMembership(userId);
+    return provider;
+  }
+
+  private async getOwnedApprovedProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        permission: 'property:manage',
+      },
+    );
     return provider;
   }
 
@@ -95,12 +107,24 @@ export class RoomService {
     return property;
   }
 
+  private async getOwnedPropertyForManage(userId: bigint, propertyId: bigint) {
+    const provider = await this.getOwnedApprovedProviderForManage(userId);
+    const property = await this.propertyRepository.findById(propertyId);
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+    if (property.providerId !== provider.id) {
+      throw new ForbiddenException('You do not own this property');
+    }
+    return property;
+  }
+
   private async getOwnedRoom(userId: bigint, roomId: bigint) {
     const room = await this.roomRepository.findById(roomId);
     if (!room) {
       throw new NotFoundException('Room not found');
     }
-    await this.getOwnedProperty(userId, room.propertyId);
+    await this.getOwnedPropertyForManage(userId, room.propertyId);
     return room;
   }
 }

@@ -12,12 +12,14 @@ import {
 import { NotificationService } from '../notification/notification.service';
 import { ApplyProviderDto } from './dto/apply-provider.dto';
 import { ListProvidersDto } from './dto/list-providers.dto';
+import { OrganizationMemberRepository } from './organization-member.repository';
 import { ProviderRepository } from './provider.repository';
 
 @Injectable()
 export class ProviderService {
   constructor(
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberRepository: OrganizationMemberRepository,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -39,7 +41,24 @@ export class ProviderService {
     });
   }
 
+  /**
+   * V7 vong 1: uu tien tra theo OrganizationMember (dung cho ca Owner lan Manager/Staff duoc
+   * moi sau nay, kem `role` de Admin gan vao session dang nhap) — nhung 1 nguoi vua nop ho so
+   * con PENDING/REJECTED thi CHUA co membership (chi tao luc APPROVE, xem
+   * `provider.repository.ts#approveAndCreateOwnerMembership`), nen fallback ve
+   * `Provider.userId` cu de Frontend van hien dung trang thai (khong co field `role`).
+   */
   async getMine(userId: bigint) {
+    const member = await this.organizationMemberRepository.findByUserId(userId);
+    if (member) {
+      const provider = await this.providerRepository.findById(
+        member.providerId,
+      );
+      if (provider) {
+        return { ...provider, role: member.role };
+      }
+    }
+
     const provider = await this.providerRepository.findByUserId(userId);
     if (!provider) {
       throw new NotFoundException(
@@ -70,10 +89,10 @@ export class ProviderService {
       throw new NotFoundException('Provider not found');
     }
 
-    const updated = await this.providerRepository.updateStatus(
-      id,
-      status as ProviderStatus,
-    );
+    const updated =
+      status === 'APPROVED'
+        ? await this.providerRepository.approveAndCreateOwnerMembership(id)
+        : await this.providerRepository.updateStatus(id, status);
 
     const rejectMessage = reason
       ? `Hồ sơ đối tác "${provider.name}" của bạn đã bị từ chối. Lý do: ${reason}`

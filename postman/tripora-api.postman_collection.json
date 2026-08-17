@@ -953,7 +953,79 @@
               "host": ["{{baseUrl}}"],
               "path": ["providers", "me"]
             },
-            "description": "Yeu cau dang nhap. 404 neu chua tung apply."
+            "description": "Yeu cau dang nhap. 404 neu chua tung apply. **[V7 vong 1]** Neu da la thanh vien mot to chuc (Owner tu luc duoc duyet, hoac Manager/Staff duoc moi), response co them field `role`; ho so con PENDING/REJECTED thi chua co `role` (chua co membership)."
+          }
+        },
+        {
+          "name": "Invite Organization Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@example.com\",\n  \"role\": \"MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", "members"]
+            },
+            "description": "**[V7 vong 1]** Yeu cau dang nhap va la thanh vien co quyen `member:manage` (Owner/Manager) cua 1 Provider da APPROVED. `email` phai la tai khoan Tripora da dang ky san (404 neu khong), va chua thuoc to chuc nao khac (409 neu da la member o dau do — 1 User toi da 1 membership toan he thong). `role`: OWNER/MANAGER/BOOKING_STAFF/FINANCE_STAFF. Manager chi duoc moi BOOKING_STAFF/FINANCE_STAFF (403 neu co gan OWNER/MANAGER)."
+          }
+        },
+        {
+          "name": "List My Organization Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", "members"]
+            },
+            "description": "**[V7 vong 1]** Yeu cau dang nhap va la thanh vien cua 1 Provider da APPROVED (moi role deu xem duoc). Tra ve toan bo thanh vien kem email/ten."
+          }
+        },
+        {
+          "name": "Update Organization Member Role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"BOOKING_STAFF\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/providers/members/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", "members", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "**[V7 vong 1]** Chi Owner duoc doi role thanh vien khac. Chan neu thao tac lam to chuc mat het OWNER (400 — phai co it nhat 1 Owner)."
+          }
+        },
+        {
+          "name": "Remove Organization Member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/members/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["providers", "members", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "**[V7 vong 1]** Yeu cau quyen `member:manage` (Owner/Manager). Manager chi xoa duoc BOOKING_STAFF/FINANCE_STAFF (403 neu target la OWNER/MANAGER). Chan xoa Owner cuoi cung (400)."
           }
         },
         {

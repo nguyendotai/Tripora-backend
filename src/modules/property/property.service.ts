@@ -4,11 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ProviderStatus, ProviderType, PropertyStatus } from '@prisma/client';
+import { Prisma, ProviderType, PropertyStatus } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { ListPropertiesDto } from './dto/list-properties.dto';
@@ -20,6 +24,7 @@ export class PropertyService {
   constructor(
     private readonly propertyRepository: PropertyRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
   ) {}
@@ -32,13 +37,20 @@ export class PropertyService {
       deletedAt: null,
       status: PropertyStatus.APPROVED,
       ...(query.q && { name: { contains: query.q } }),
-      ...(query.destinationId && { destinationId: BigInt(query.destinationId) }),
+      ...(query.destinationId && {
+        destinationId: BigInt(query.destinationId),
+      }),
     };
 
     const orderBy: Prisma.PropertyOrderByWithRelationInput =
       query.sort === 'name_asc' ? { name: 'asc' } : { createdAt: 'desc' };
 
-    const [items, totalItems] = await this.propertyRepository.findMany(where, skip, take, orderBy);
+    const [items, totalItems] = await this.propertyRepository.findMany(
+      where,
+      skip,
+      take,
+      orderBy,
+    );
     const minPrices = await this.propertyRepository.findMinPricesByPropertyIds(
       items.map((item) => item.id),
     );
@@ -69,7 +81,11 @@ export class PropertyService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.propertyRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.propertyRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -82,17 +98,25 @@ export class PropertyService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.propertyRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.propertyRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
   async create(userId: bigint, dto: CreatePropertyDto) {
-    const provider = await this.getOwnedApprovedProvider(userId);
+    const provider = await this.getOwnedApprovedProviderForManage(userId);
 
     if (dto.destinationId) {
-      const destination = await this.destinationRepository.findById(BigInt(dto.destinationId));
+      const destination = await this.destinationRepository.findById(
+        BigInt(dto.destinationId),
+      );
       if (!destination) {
-        throw new BadRequestException(`Destination not found: ${dto.destinationId}`);
+        throw new BadRequestException(
+          `Destination not found: ${dto.destinationId}`,
+        );
       }
     }
 
@@ -121,9 +145,13 @@ export class PropertyService {
     const property = await this.getOwnedProperty(userId, propertyId);
 
     if (dto.destinationId) {
-      const destination = await this.destinationRepository.findById(BigInt(dto.destinationId));
+      const destination = await this.destinationRepository.findById(
+        BigInt(dto.destinationId),
+      );
       if (!destination) {
-        throw new BadRequestException(`Destination not found: ${dto.destinationId}`);
+        throw new BadRequestException(
+          `Destination not found: ${dto.destinationId}`,
+        );
       }
     }
 
@@ -155,9 +183,11 @@ export class PropertyService {
       throw new NotFoundException('Property not found');
     }
 
-    const updated = await this.propertyRepository.updateStatus(id, status as PropertyStatus);
+    const updated = await this.propertyRepository.updateStatus(id, status);
 
-    const provider = await this.providerRepository.findById(property.providerId);
+    const provider = await this.providerRepository.findById(
+      property.providerId,
+    );
     if (provider) {
       const rejectMessage = reason
         ? `Khách sạn "${property.name}" của bạn đã bị từ chối. Lý do: ${reason}`
@@ -165,7 +195,9 @@ export class PropertyService {
 
       await this.notificationService.notify(
         provider.userId,
-        status === 'APPROVED' ? 'Khách sạn đã được duyệt' : 'Khách sạn bị từ chối',
+        status === 'APPROVED'
+          ? 'Khách sạn đã được duyệt'
+          : 'Khách sạn bị từ chối',
         status === 'APPROVED'
           ? `Khách sạn "${property.name}" của bạn đã được duyệt và hiển thị công khai.`
           : rejectMessage,
@@ -175,21 +207,35 @@ export class PropertyService {
     return updated;
   }
 
-  /** Chỉ Provider type=HOTEL đã APPROVED mới quản lý Property — tách domain với Tour Operator (V3). */
+  /**
+   * Chỉ Provider type=HOTEL đã APPROVED mới quản lý Property — tách domain với Tour Operator (V3).
+   * V7 vòng 1: tra qua OrganizationMember (mọi role trong tổ chức) thay vì Provider.userId 1:1 cũ
+   * — dùng cho đường đọc (`listMine`), không yêu cầu quyền ghi.
+   */
   private async getOwnedApprovedProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.HOTEL
-    ) {
-      throw new ForbiddenException('You need an approved provider profile to do this');
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.HOTEL,
+      },
+    );
+    return provider;
+  }
+
+  /** Như trên, nhưng thêm yêu cầu quyền `property:manage` — dùng cho create/update/remove (chỉ Owner/Manager). */
+  private async getOwnedApprovedProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.HOTEL,
+        permission: 'property:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedProperty(userId: bigint, propertyId: bigint) {
-    const provider = await this.getOwnedApprovedProvider(userId);
+    const provider = await this.getOwnedApprovedProviderForManage(userId);
     const property = await this.propertyRepository.findById(propertyId);
     if (!property) {
       throw new NotFoundException('Property not found');

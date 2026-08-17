@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -19,10 +22,13 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApplyProviderDto } from './dto/apply-provider.dto';
+import { CreateOrganizationMemberDto } from './dto/create-organization-member.dto';
 import { ListProvidersDto } from './dto/list-providers.dto';
 import { ReviewProviderDto } from './dto/review-provider.dto';
 import { SuspendProviderDto } from './dto/suspend-provider.dto';
 import { UpdateCommissionRateDto } from './dto/update-commission-rate.dto';
+import { UpdateOrganizationMemberDto } from './dto/update-organization-member.dto';
+import { OrganizationMemberService } from './organization-member.service';
 import { ProviderService } from './provider.service';
 
 @ApiTags('Provider')
@@ -30,7 +36,10 @@ import { ProviderService } from './provider.service';
 @UseGuards(JwtAuthGuard)
 @Controller('providers')
 export class ProviderController {
-  constructor(private readonly providerService: ProviderService) {}
+  constructor(
+    private readonly providerService: ProviderService,
+    private readonly organizationMemberService: OrganizationMemberService,
+  ) {}
 
   @Post('apply')
   apply(
@@ -43,6 +52,44 @@ export class ProviderController {
   @Get('me')
   getMine(@CurrentUser() user: CurrentUserPayload) {
     return this.providerService.getMine(BigInt(user.id));
+  }
+
+  @Post('members')
+  createMember(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateOrganizationMemberDto,
+  ) {
+    return this.organizationMemberService.createMember(BigInt(user.id), dto);
+  }
+
+  @Get('members')
+  listMembers(@CurrentUser() user: CurrentUserPayload) {
+    return this.organizationMemberService.listMembers(BigInt(user.id));
+  }
+
+  @Patch('members/:id')
+  updateMember(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateOrganizationMemberDto,
+  ) {
+    return this.organizationMemberService.updateMemberRole(
+      BigInt(user.id),
+      parseIdParam(id),
+      dto.role,
+    );
+  }
+
+  @Delete('members/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeMember(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.organizationMemberService.removeMember(
+      BigInt(user.id),
+      parseIdParam(id),
+    );
   }
 
   @Get()
