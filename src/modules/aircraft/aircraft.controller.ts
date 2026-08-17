@@ -13,7 +13,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
@@ -32,7 +35,10 @@ export class AircraftController {
   constructor(private readonly aircraftService: AircraftService) {}
 
   @Get('mine')
-  listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ListAircraftDto) {
+  listMine(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListAircraftDto,
+  ) {
     return this.aircraftService.listMine(BigInt(user.id), query);
   }
 
@@ -44,7 +50,10 @@ export class AircraftController {
   }
 
   @Post()
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateAircraftDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateAircraftDto,
+  ) {
     return this.aircraftService.create(BigInt(user.id), dto);
   }
 
@@ -67,6 +76,10 @@ export class AircraftController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   review(@Param('id') id: string, @Body() dto: ReviewAircraftDto) {
-    return this.aircraftService.review(parseIdParam(id), dto.status, dto.reason);
+    return this.aircraftService.review(
+      parseIdParam(id),
+      dto.status,
+      dto.reason,
+    );
   }
 }

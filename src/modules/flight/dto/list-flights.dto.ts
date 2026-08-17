@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNumberString, IsOptional, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { FlightStatus } from '@prisma/client';
 
 export class ListFlightsDto {

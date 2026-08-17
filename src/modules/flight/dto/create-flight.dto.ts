@@ -1,4 +1,10 @@
-import { IsInt, IsNumberString, IsString, Min, MinLength } from 'class-validator';
+import {
+  IsInt,
+  IsNumberString,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateFlightDto {
   @IsNumberString()

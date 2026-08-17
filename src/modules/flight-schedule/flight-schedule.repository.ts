@@ -21,7 +21,10 @@ export class FlightScheduleRepository {
     });
   }
 
-  findByFlightAndDate(flightId: bigint, departureDate: Date): Promise<FlightSchedule | null> {
+  findByFlightAndDate(
+    flightId: bigint,
+    departureDate: Date,
+  ): Promise<FlightSchedule | null> {
     return this.prisma.flightSchedule.findUnique({
       where: { flightId_departureDate: { flightId, departureDate } },
     });
@@ -62,7 +65,9 @@ export class FlightScheduleRepository {
         departureTime: data.departureTime,
         arrivalTime: data.arrivalTime,
         economyPrice: data.economyPrice,
-        ...(data.businessPrice !== undefined && { businessPrice: data.businessPrice }),
+        ...(data.businessPrice !== undefined && {
+          businessPrice: data.businessPrice,
+        }),
       },
     });
   }

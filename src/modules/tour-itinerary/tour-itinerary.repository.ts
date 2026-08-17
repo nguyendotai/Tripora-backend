@@ -7,7 +7,10 @@ export class TourItineraryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findMany(where: Prisma.TourItineraryWhereInput): Promise<TourItinerary[]> {
-    return this.prisma.tourItinerary.findMany({ where, orderBy: { dayNumber: 'asc' } });
+    return this.prisma.tourItinerary.findMany({
+      where,
+      orderBy: { dayNumber: 'asc' },
+    });
   }
 
   findById(id: bigint): Promise<TourItinerary | null> {
@@ -26,7 +29,10 @@ export class TourItineraryRepository {
     return this.prisma.tourItinerary.create({ data });
   }
 
-  update(id: bigint, data: Prisma.TourItineraryUpdateInput): Promise<TourItinerary> {
+  update(
+    id: bigint,
+    data: Prisma.TourItineraryUpdateInput,
+  ): Promise<TourItinerary> {
     return this.prisma.tourItinerary.update({ where: { id }, data });
   }
 

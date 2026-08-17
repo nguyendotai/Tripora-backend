@@ -57,7 +57,10 @@ export class TourGuideController {
   }
 
   @Patch('me')
-  updateMe(@CurrentUser() user: CurrentUserPayload, @Body() dto: UpdateMyGuideProfileDto) {
+  updateMe(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateMyGuideProfileDto,
+  ) {
     return this.tourGuideService.updateMe(BigInt(user.id), dto);
   }
 
@@ -67,8 +70,14 @@ export class TourGuideController {
   }
 
   @Get('me/schedules/:scheduleId/travelers')
-  listTravelers(@CurrentUser() user: CurrentUserPayload, @Param('scheduleId') scheduleId: string) {
-    return this.tourGuideService.listTravelers(BigInt(user.id), BigInt(scheduleId));
+  listTravelers(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('scheduleId') scheduleId: string,
+  ) {
+    return this.tourGuideService.listTravelers(
+      BigInt(user.id),
+      BigInt(scheduleId),
+    );
   }
 
   // ---------- Tour Operator (wildcard :id — phai khai bao sau cung) ----------

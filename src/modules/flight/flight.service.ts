@@ -4,12 +4,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AircraftStatus, FlightStatus, Prisma, ProviderStatus, ProviderType } from '@prisma/client';
+import {
+  AircraftStatus,
+  FlightStatus,
+  Prisma,
+  ProviderType,
+} from '@prisma/client';
 import { AircraftRepository } from '../aircraft/aircraft.repository';
 import { AirportRepository } from '../airport/airport.repository';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { ListFlightsDto } from './dto/list-flights.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
@@ -20,6 +29,7 @@ export class FlightService {
   constructor(
     private readonly flightRepository: FlightRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly aircraftRepository: AircraftRepository,
     private readonly airportRepository: AirportRepository,
     private readonly notificationService: NotificationService,
@@ -32,11 +42,19 @@ export class FlightService {
     const where: Prisma.FlightWhereInput = {
       deletedAt: null,
       status: FlightStatus.APPROVED,
-      ...(query.departureAirportId && { departureAirportId: BigInt(query.departureAirportId) }),
-      ...(query.arrivalAirportId && { arrivalAirportId: BigInt(query.arrivalAirportId) }),
+      ...(query.departureAirportId && {
+        departureAirportId: BigInt(query.departureAirportId),
+      }),
+      ...(query.arrivalAirportId && {
+        arrivalAirportId: BigInt(query.arrivalAirportId),
+      }),
     };
 
-    const [items, totalItems] = await this.flightRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.flightRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -58,7 +76,11 @@ export class FlightService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.flightRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.flightRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -70,12 +92,17 @@ export class FlightService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.flightRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.flightRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
   async create(userId: bigint, dto: CreateFlightDto) {
-    const provider = await this.getOwnedApprovedAirlineProvider(userId);
+    const provider =
+      await this.getOwnedApprovedAirlineProviderForManage(userId);
     const aircraftId = BigInt(dto.aircraftId);
     const departureAirportId = BigInt(dto.departureAirportId);
     const arrivalAirportId = BigInt(dto.arrivalAirportId);
@@ -94,7 +121,8 @@ export class FlightService {
   }
 
   async update(userId: bigint, flightId: bigint, dto: UpdateFlightDto) {
-    const provider = await this.getOwnedApprovedAirlineProvider(userId);
+    const provider =
+      await this.getOwnedApprovedAirlineProviderForManage(userId);
     const flight = await this.getOwnedFlight(provider.id, flightId);
 
     const data: Prisma.FlightUpdateInput = {
@@ -109,10 +137,17 @@ export class FlightService {
     }
 
     const departureAirportId =
-      dto.departureAirportId !== undefined ? BigInt(dto.departureAirportId) : flight.departureAirportId;
+      dto.departureAirportId !== undefined
+        ? BigInt(dto.departureAirportId)
+        : flight.departureAirportId;
     const arrivalAirportId =
-      dto.arrivalAirportId !== undefined ? BigInt(dto.arrivalAirportId) : flight.arrivalAirportId;
-    if (dto.departureAirportId !== undefined || dto.arrivalAirportId !== undefined) {
+      dto.arrivalAirportId !== undefined
+        ? BigInt(dto.arrivalAirportId)
+        : flight.arrivalAirportId;
+    if (
+      dto.departureAirportId !== undefined ||
+      dto.arrivalAirportId !== undefined
+    ) {
       await this.assertDistinctAirports(departureAirportId, arrivalAirportId);
       if (dto.departureAirportId !== undefined) {
         data.departureAirport = { connect: { id: departureAirportId } };
@@ -126,7 +161,8 @@ export class FlightService {
   }
 
   async remove(userId: bigint, flightId: bigint) {
-    const provider = await this.getOwnedApprovedAirlineProvider(userId);
+    const provider =
+      await this.getOwnedApprovedAirlineProviderForManage(userId);
     const flight = await this.getOwnedFlight(provider.id, flightId);
     await this.flightRepository.softDelete(flight.id);
   }
@@ -147,7 +183,9 @@ export class FlightService {
 
       await this.notificationService.notify(
         provider.userId,
-        status === 'APPROVED' ? 'Chuyến bay đã được duyệt' : 'Chuyến bay bị từ chối',
+        status === 'APPROVED'
+          ? 'Chuyến bay đã được duyệt'
+          : 'Chuyến bay bị từ chối',
         status === 'APPROVED'
           ? `Chuyến bay "${flight.flightNumber}" của bạn đã được duyệt và hiển thị công khai.`
           : rejectMessage,
@@ -157,19 +195,29 @@ export class FlightService {
     return updated;
   }
 
-  private async assertOwnedApprovedAircraft(providerId: bigint, aircraftId: bigint) {
+  private async assertOwnedApprovedAircraft(
+    providerId: bigint,
+    aircraftId: bigint,
+  ) {
     const aircraft = await this.aircraftRepository.findById(aircraftId);
     if (!aircraft || aircraft.providerId !== providerId) {
       throw new NotFoundException('Aircraft not found');
     }
     if (aircraft.status !== AircraftStatus.APPROVED) {
-      throw new BadRequestException('Aircraft must be APPROVED before it can be used on a flight');
+      throw new BadRequestException(
+        'Aircraft must be APPROVED before it can be used on a flight',
+      );
     }
   }
 
-  private async assertDistinctAirports(departureAirportId: bigint, arrivalAirportId: bigint) {
+  private async assertDistinctAirports(
+    departureAirportId: bigint,
+    arrivalAirportId: bigint,
+  ) {
     if (departureAirportId === arrivalAirportId) {
-      throw new BadRequestException('Departure and arrival airport must be different');
+      throw new BadRequestException(
+        'Departure and arrival airport must be different',
+      );
     }
     const [departure, arrival] = await Promise.all([
       this.airportRepository.findById(departureAirportId),
@@ -185,14 +233,23 @@ export class FlightService {
 
   /** Chỉ Provider type=FLIGHT đã APPROVED mới quản lý Flight — tách domain với các loại đối tác khác. */
   private async getOwnedApprovedAirlineProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.FLIGHT
-    ) {
-      throw new ForbiddenException('You need an approved airline profile to do this');
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.FLIGHT,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedAirlineProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.FLIGHT,
+        permission: 'flight:manage',
+      },
+    );
     return provider;
   }
 

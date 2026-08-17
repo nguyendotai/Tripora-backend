@@ -4,11 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ProviderStatus, ProviderType, TourStatus } from '@prisma/client';
+import { Prisma, ProviderType, TourStatus } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { ListToursDto } from './dto/list-tours.dto';
@@ -20,6 +24,7 @@ export class TourService {
   constructor(
     private readonly tourRepository: TourRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
   ) {}
@@ -32,13 +37,20 @@ export class TourService {
       deletedAt: null,
       status: TourStatus.APPROVED,
       ...(query.q && { title: { contains: query.q } }),
-      ...(query.destinationId && { destinationId: BigInt(query.destinationId) }),
+      ...(query.destinationId && {
+        destinationId: BigInt(query.destinationId),
+      }),
     };
 
     const orderBy: Prisma.TourOrderByWithRelationInput =
       query.sort === 'title_asc' ? { title: 'asc' } : { createdAt: 'desc' };
 
-    const [items, totalItems] = await this.tourRepository.findMany(where, skip, take, orderBy);
+    const [items, totalItems] = await this.tourRepository.findMany(
+      where,
+      skip,
+      take,
+      orderBy,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -61,7 +73,11 @@ export class TourService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.tourRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.tourRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -74,17 +90,25 @@ export class TourService {
       ...(query.status && { status: query.status }),
     };
 
-    const [items, totalItems] = await this.tourRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.tourRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items, totalItems, page, limit);
   }
 
   async create(userId: bigint, dto: CreateTourDto) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+    const provider = await this.getOwnedApprovedTourProviderForManage(userId);
 
     if (dto.destinationId) {
-      const destination = await this.destinationRepository.findById(BigInt(dto.destinationId));
+      const destination = await this.destinationRepository.findById(
+        BigInt(dto.destinationId),
+      );
       if (!destination) {
-        throw new BadRequestException(`Destination not found: ${dto.destinationId}`);
+        throw new BadRequestException(
+          `Destination not found: ${dto.destinationId}`,
+        );
       }
     }
 
@@ -112,9 +136,13 @@ export class TourService {
     const tour = await this.getOwnedTour(userId, tourId);
 
     if (dto.destinationId) {
-      const destination = await this.destinationRepository.findById(BigInt(dto.destinationId));
+      const destination = await this.destinationRepository.findById(
+        BigInt(dto.destinationId),
+      );
       if (!destination) {
-        throw new BadRequestException(`Destination not found: ${dto.destinationId}`);
+        throw new BadRequestException(
+          `Destination not found: ${dto.destinationId}`,
+        );
       }
     }
 
@@ -122,12 +150,18 @@ export class TourService {
       ...(dto.title !== undefined && { title: dto.title }),
       ...(dto.description !== undefined && { description: dto.description }),
       ...(dto.images !== undefined && { images: dto.images }),
-      ...(dto.durationLabel !== undefined && { durationLabel: dto.durationLabel }),
+      ...(dto.durationLabel !== undefined && {
+        durationLabel: dto.durationLabel,
+      }),
       ...(dto.price !== undefined && { price: dto.price }),
-      ...(dto.maxParticipants !== undefined && { maxParticipants: dto.maxParticipants }),
+      ...(dto.maxParticipants !== undefined && {
+        maxParticipants: dto.maxParticipants,
+      }),
       ...(dto.included !== undefined && { included: dto.included }),
       ...(dto.excluded !== undefined && { excluded: dto.excluded }),
-      ...(dto.cancellationPolicy !== undefined && { cancellationPolicy: dto.cancellationPolicy }),
+      ...(dto.cancellationPolicy !== undefined && {
+        cancellationPolicy: dto.cancellationPolicy,
+      }),
       ...(dto.destinationId !== undefined && {
         destination: { connect: { id: BigInt(dto.destinationId) } },
       }),
@@ -145,7 +179,7 @@ export class TourService {
       throw new NotFoundException('Tour not found');
     }
 
-    const updated = await this.tourRepository.updateStatus(id, status as TourStatus);
+    const updated = await this.tourRepository.updateStatus(id, status);
 
     const provider = await this.providerRepository.findById(tour.providerId);
     if (provider) {
@@ -167,19 +201,28 @@ export class TourService {
 
   /** Chỉ Provider type=TOUR đã APPROVED mới quản lý Tour — tách domain với Hotel Provider. */
   private async getOwnedApprovedTourProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TOUR
-    ) {
-      throw new ForbiddenException('You need an approved tour operator profile to do this');
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedTourProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TOUR,
+        permission: 'tour:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedTour(userId: bigint, tourId: bigint) {
-    const provider = await this.getOwnedApprovedTourProvider(userId);
+    const provider = await this.getOwnedApprovedTourProviderForManage(userId);
     const tour = await this.tourRepository.findById(tourId);
     if (!tour) {
       throw new NotFoundException('Tour not found');

@@ -1,6 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AssignDriverDto } from './dto/assign-driver.dto';
@@ -16,7 +28,10 @@ export class DriverController {
   constructor(private readonly driverService: DriverService) {}
 
   @Post()
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateDriverDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateDriverDto,
+  ) {
     return this.driverService.create(BigInt(user.id), dto);
   }
 
@@ -26,7 +41,10 @@ export class DriverController {
   }
 
   @Patch('assign')
-  assign(@CurrentUser() user: CurrentUserPayload, @Body() dto: AssignDriverDto) {
+  assign(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: AssignDriverDto,
+  ) {
     return this.driverService.assign(BigInt(user.id), dto);
   }
 

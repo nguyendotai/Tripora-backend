@@ -1,6 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProviderStatus, ProviderType } from '@prisma/client';
-import { ProviderRepository } from '../provider/provider.repository';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { ProviderType } from '@prisma/client';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { TransportBookingRepository } from '../transport-booking/transport-booking.repository';
 import { TransportRouteRepository } from '../transport-route/transport-route.repository';
 import { AssignDriverDto } from './dto/assign-driver.dto';
@@ -12,13 +16,14 @@ import { DriverRepository } from './driver.repository';
 export class DriverService {
   constructor(
     private readonly driverRepository: DriverRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly transportBookingRepository: TransportBookingRepository,
     private readonly transportRouteRepository: TransportRouteRepository,
   ) {}
 
   async create(userId: bigint, dto: CreateDriverDto) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
     return this.driverRepository.create({
       providerId: provider.id,
       name: dto.name,
@@ -44,7 +49,8 @@ export class DriverService {
 
   /** Gan/go 1 Driver cho 1 Booking cu the — driverId rong = go phan cong. */
   async assign(userId: bigint, dto: AssignDriverDto) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
 
     const bookingId = BigInt(dto.bookingId);
     const booking = await this.transportBookingRepository.findById(bookingId);
@@ -70,19 +76,29 @@ export class DriverService {
   }
 
   private async getOwnedApprovedTransportProvider(userId: bigint) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TRANSPORT
-    ) {
-      throw new ForbiddenException('You need an approved transport operator profile to do this');
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TRANSPORT,
+      },
+    );
+    return provider;
+  }
+
+  private async getOwnedApprovedTransportProviderForManage(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        providerType: ProviderType.TRANSPORT,
+        permission: 'transport:manage',
+      },
+    );
     return provider;
   }
 
   private async getOwnedDriver(userId: bigint, driverId: bigint) {
-    const provider = await this.getOwnedApprovedTransportProvider(userId);
+    const provider =
+      await this.getOwnedApprovedTransportProviderForManage(userId);
     const driver = await this.driverRepository.findById(driverId);
     if (!driver) {
       throw new NotFoundException('Driver not found');

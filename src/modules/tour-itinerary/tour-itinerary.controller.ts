@@ -12,7 +12,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateTourItineraryDto } from './dto/create-tour-itinerary.dto';
@@ -33,14 +36,23 @@ export class TourItineraryController {
   @Get('mine')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ListTourItinerariesDto) {
-    return this.tourItineraryService.listMine(BigInt(user.id), BigInt(query.tourId));
+  listMine(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListTourItinerariesDto,
+  ) {
+    return this.tourItineraryService.listMine(
+      BigInt(user.id),
+      BigInt(query.tourId),
+    );
   }
 
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateTourItineraryDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateTourItineraryDto,
+  ) {
     return this.tourItineraryService.create(BigInt(user.id), dto);
   }
 
@@ -52,7 +64,11 @@ export class TourItineraryController {
     @Param('id') id: string,
     @Body() dto: UpdateTourItineraryDto,
   ) {
-    return this.tourItineraryService.update(BigInt(user.id), parseIdParam(id), dto);
+    return this.tourItineraryService.update(
+      BigInt(user.id),
+      parseIdParam(id),
+      dto,
+    );
   }
 
   @Delete(':id')

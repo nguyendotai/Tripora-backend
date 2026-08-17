@@ -5,7 +5,9 @@ import { PrismaService } from '../../database/prisma.service';
 const includeRelations = {
   provider: { select: { id: true, name: true, userId: true } },
   aircraft: { select: { id: true, model: true, registrationCode: true } },
-  departureAirport: { select: { id: true, code: true, name: true, city: true } },
+  departureAirport: {
+    select: { id: true, code: true, name: true, city: true },
+  },
   arrivalAirport: { select: { id: true, code: true, name: true, city: true } },
 } satisfies Prisma.FlightInclude;
 
@@ -20,7 +22,13 @@ export class FlightRepository {
     orderBy: Prisma.FlightOrderByWithRelationInput = { createdAt: 'desc' },
   ): Promise<[Flight[], number]> {
     return this.prisma.$transaction([
-      this.prisma.flight.findMany({ where, skip, take, orderBy, include: includeRelations }),
+      this.prisma.flight.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        include: includeRelations,
+      }),
       this.prisma.flight.count({ where }),
     ]);
   }

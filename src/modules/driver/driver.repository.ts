@@ -35,7 +35,12 @@ export class DriverRepository {
 
   update(
     id: bigint,
-    data: { name?: string; phone?: string; licenseNumber?: string; status?: DriverStatus },
+    data: {
+      name?: string;
+      phone?: string;
+      licenseNumber?: string;
+      status?: DriverStatus;
+    },
   ): Promise<Driver> {
     return this.prisma.driver.update({ where: { id }, data });
   }
@@ -46,6 +51,9 @@ export class DriverRepository {
       where: { driverId: id },
       data: { driverId: null },
     });
-    return this.prisma.driver.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.driver.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }
