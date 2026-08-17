@@ -3642,6 +3642,37 @@
             },
             "description": "**[V6 vong 2]** Yeu cau role ADMIN. Sinh tu dong 1 dong / 1 Payment SUCCESS (grossAmount = Payment.amount da tru discount, rate = Provider.commissionRate snapshot tai thoi diem tinh, khong tu hoi to khi rate hoac Booking sau do thay doi). Optional loc theo `providerId`."
           }
+        },
+        {
+          "name": "List My Commissions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "mine"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V7 vong 4]** Yeu cau la thanh vien to chuc co quyen `finance:view` (Owner/Manager/Finance Staff — Booking Staff bi 403). Tra ve Commission cua dung Provider dang dang nhap, kem `payoutStatus`/`paidAt`."
+          }
+        },
+        {
+          "name": "Mark Commission Paid Out (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/:id/payout",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", ":id", "payout"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "**[V7 vong 4]** Yeu cau role ADMIN. Danh dau 1 Commission da tra cho Provider (chuyen khoan xu ly ngoai he thong) — chuyen `payoutStatus` sang `PAID`, set `paidAt`. Toi gian: tung dong 1, khong batch/khong tich hop API chuyen tien that."
+          }
         }
       ]
     },
