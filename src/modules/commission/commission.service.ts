@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BookingDomain, Prisma } from '@prisma/client';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
 import { CommissionRepository } from './commission.repository';
 import { ListCommissionsDto } from './dto/list-commissions.dto';
+import { ListMyCommissionsDto } from './dto/list-my-commissions.dto';
 
 export interface RecordCommissionParams {
   paymentId: bigint;
@@ -18,7 +20,10 @@ export interface RecordCommissionParams {
 export class CommissionService {
   private readonly logger = new Logger(CommissionService.name);
 
-  constructor(private readonly commissionRepository: CommissionRepository) {}
+  constructor(
+    private readonly commissionRepository: CommissionRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
+  ) {}
 
   /**
    * Goi tu PaymentService.handleWebhook SAU KHI Payment SUCCESS — best-effort, khong duoc nem loi
@@ -82,5 +87,30 @@ export class CommissionService {
       take,
     );
     return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** Provider (Owner/Manager/Finance Staff) tu xem doanh thu cua chinh to chuc minh. */
+  async listMine(userId: bigint, query: ListMyCommissionsDto) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        permission: 'finance:view',
+      },
+    );
+    const { page, limit, skip, take } = resolvePagination(query);
+
+    const [items, totalItems] =
+      await this.commissionRepository.findByProviderId(provider.id, skip, take);
+    return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** Admin danh dau 1 Commission da tra cho Provider (chuyen khoan ngoai he thong) — toi gian,
+   * tung dong 1, khong batch/khong tich hop API chuyen tien that. */
+  async markPaidOut(id: bigint) {
+    const commission = await this.commissionRepository.findById(id);
+    if (!commission) {
+      throw new NotFoundException('Commission not found');
+    }
+    return this.commissionRepository.updatePayoutStatus(id, 'PAID');
   }
 }
