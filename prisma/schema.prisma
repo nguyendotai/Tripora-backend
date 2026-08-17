@@ -1249,6 +1249,11 @@ model Refund {
 // khi Booking sau do bi Refund, xem CHANGELOG). rate la snapshot Provider.commissionRate tai thoi
 // diem tinh (khong join nguoc de biet rate da thay doi hay chua). grossAmount = Payment.amount
 // (da tru discount, thuc thu qua Stripe).
+enum PayoutStatus {
+  PENDING
+  PAID
+}
+
 model Commission {
   id             BigInt        @id @default(autoincrement())
   providerId     BigInt        @map("provider_id")
@@ -1259,6 +1264,10 @@ model Commission {
   rate           Decimal       @db.Decimal(5, 4)
   platformAmount Decimal       @map("platform_amount") @db.Decimal(10, 2)
   providerAmount Decimal       @map("provider_amount") @db.Decimal(10, 2)
+  // V7 vong 4 — Payout toi gian: 1 dong = 1 trang thai, Admin tu tay danh dau da tra (chuyen khoan
+  // ngoai he thong), khong batch/khong tich hop API chuyen tien that.
+  payoutStatus   PayoutStatus  @default(PENDING) @map("payout_status")
+  paidAt         DateTime?     @map("paid_at")
   createdAt      DateTime      @default(now()) @map("created_at")
 
   provider Provider @relation(fields: [providerId], references: [id])

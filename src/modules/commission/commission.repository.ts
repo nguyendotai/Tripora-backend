@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { BookingDomain, Commission, Prisma } from '@prisma/client';
+import {
+  BookingDomain,
+  Commission,
+  PayoutStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 /**
@@ -91,5 +96,36 @@ export class CommissionRepository {
       }),
       this.prisma.commission.count({ where }),
     ]);
+  }
+
+  /** Provider tu xem doanh thu cua chinh minh — khong can include ten Provider (da biet la minh). */
+  async findByProviderId(
+    providerId: bigint,
+    skip: number,
+    take: number,
+  ): Promise<[Commission[], number]> {
+    return this.prisma.$transaction([
+      this.prisma.commission.findMany({
+        where: { providerId },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.commission.count({ where: { providerId } }),
+    ]);
+  }
+
+  findById(id: bigint): Promise<Commission | null> {
+    return this.prisma.commission.findUnique({ where: { id } });
+  }
+
+  updatePayoutStatus(id: bigint, status: PayoutStatus): Promise<Commission> {
+    return this.prisma.commission.update({
+      where: { id },
+      data: {
+        payoutStatus: status,
+        paidAt: status === 'PAID' ? new Date() : null,
+      },
+    });
   }
 }
