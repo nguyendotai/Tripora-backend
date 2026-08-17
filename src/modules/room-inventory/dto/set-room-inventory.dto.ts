@@ -1,4 +1,11 @@
-import { IsDateString, IsInt, IsNumber, IsNumberString, IsOptional, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsNumberString,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class SetRoomInventoryDto {
   @IsNumberString()
