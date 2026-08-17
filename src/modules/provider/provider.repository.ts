@@ -42,6 +42,7 @@ export class ProviderRepository {
     description?: string;
     logo?: string;
     contact?: string;
+    documents?: string[];
   }): Promise<Provider> {
     return this.prisma.provider.create({
       data: {
@@ -50,6 +51,7 @@ export class ProviderRepository {
         description: data.description,
         logo: data.logo,
         contact: data.contact,
+        documents: data.documents,
         user: { connect: { id: data.userId } },
       },
     });
