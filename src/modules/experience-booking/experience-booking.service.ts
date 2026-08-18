@@ -10,14 +10,13 @@ import {
   BookingStatus,
   ExperienceStatus,
   Prisma,
-  ProviderStatus,
   ProviderType,
 } from '@prisma/client';
 import { CouponService } from '../coupon/coupon.service';
 import { ExperienceRepository } from '../experience/experience.repository';
 import { ExperienceScheduleRepository } from '../experience-schedule/experience-schedule.repository';
 import { PaymentService } from '../payment/payment.service';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import {
   buildPaginated,
   resolvePagination,
@@ -34,7 +33,7 @@ export class ExperienceBookingService {
     private readonly experienceBookingRepository: ExperienceBookingRepository,
     private readonly experienceRepository: ExperienceRepository,
     private readonly experienceScheduleRepository: ExperienceScheduleRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly paymentService: PaymentService,
     private readonly couponService: CouponService,
   ) {}
@@ -155,16 +154,10 @@ export class ExperienceBookingService {
     userId: bigint,
     query: ListProviderExperienceBookingsDto,
   ) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.ACTIVITY
-    ) {
-      throw new ForbiddenException(
-        'You need an approved experience operator profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.ACTIVITY, permission: 'booking:view' },
+    );
 
     const today = this.today();
     return this.experienceBookingRepository.findManyByProvider(

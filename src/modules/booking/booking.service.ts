@@ -10,13 +10,12 @@ import {
   BookingStatus,
   PropertyStatus,
   Prisma,
-  ProviderStatus,
   RoomStatus,
 } from '@prisma/client';
 import { CouponService } from '../coupon/coupon.service';
 import { PaymentService } from '../payment/payment.service';
 import { PropertyRepository } from '../property/property.repository';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { RoomInventoryRepository } from '../room-inventory/room-inventory.repository';
 import { RoomRepository } from '../room/room.repository';
 import { BookingRepository } from './booking.repository';
@@ -38,7 +37,7 @@ export class BookingService {
     private readonly roomRepository: RoomRepository,
     private readonly propertyRepository: PropertyRepository,
     private readonly roomInventoryRepository: RoomInventoryRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly paymentService: PaymentService,
     private readonly couponService: CouponService,
   ) {}
@@ -170,12 +169,10 @@ export class BookingService {
 
   /** Provider — xem Booking cua cac khach san minh so huu, optional loc theo 1 Property. */
   async listMineAsProvider(userId: bigint, query: ListProviderBookingsDto) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (!provider || provider.status !== ProviderStatus.APPROVED) {
-      throw new ForbiddenException(
-        'You need an approved provider profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { permission: 'booking:view' },
+    );
 
     const today = new Date(
       `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
