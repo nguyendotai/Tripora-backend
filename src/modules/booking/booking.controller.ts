@@ -48,6 +48,13 @@ export class BookingController {
     return this.bookingService.listMineAsProvider(BigInt(user.id), query);
   }
 
+  @Get('provider/customers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listCustomersAsProvider(@CurrentUser() user: CurrentUserPayload) {
+    return this.bookingService.listCustomersAsProvider(BigInt(user.id));
+  }
+
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

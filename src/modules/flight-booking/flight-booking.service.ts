@@ -23,6 +23,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { groupBookingsByCustomer } from '../../shared/utils/group-bookings-by-customer';
 import { CreateFlightBookingDto } from './dto/create-flight-booking.dto';
 import { ListAllFlightBookingsDto } from './dto/list-all-flight-bookings.dto';
 import { ListProviderFlightBookingsDto } from './dto/list-provider-flight-bookings.dto';
@@ -199,6 +200,23 @@ export class FlightBookingService {
       query.status,
       today,
     );
+  }
+
+  /** V7 vong 7 — Provider xem danh sach khach hang, nhom tu toan bo FlightBooking cua minh. */
+  async listCustomersAsProvider(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.FLIGHT, permission: 'booking:view' },
+    );
+
+    const today = this.today();
+    const bookings = await this.flightBookingRepository.findManyByProvider(
+      provider.id,
+      undefined,
+      undefined,
+      today,
+    );
+    return groupBookingsByCustomer(bookings);
   }
 
   /** Chi huy duoc booking CONFIRMED cua chinh minh va departureDate chua toi. */

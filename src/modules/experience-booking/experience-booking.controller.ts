@@ -71,6 +71,15 @@ export class ExperienceBookingController {
     );
   }
 
+  @Get('provider/customers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listCustomersAsProvider(@CurrentUser() user: CurrentUserPayload) {
+    return this.experienceBookingService.listCustomersAsProvider(
+      BigInt(user.id),
+    );
+  }
+
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
