@@ -711,6 +711,26 @@
           }
         },
         {
+          "name": "Create Review (Property)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"1\",\n  \"rating\": 5,\n  \"content\": \"Khach san rat sach se!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"]
+            },
+            "description": "**[V7 vong 9]** Yeu cau dang nhap + da co Booking CONFIRMED/COMPLETED cho dung Property nay (403 neu chua tung dat). Dung dung 1 trong 2 destinationId/propertyId (400 neu ca 2 hoac khong co gi). 409 neu user da review property nay roi."
+          }
+        },
+        {
           "name": "Update Review",
           "request": {
             "method": "PATCH",
