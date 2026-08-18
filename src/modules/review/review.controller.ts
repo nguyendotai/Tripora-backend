@@ -26,6 +26,16 @@ import { ReviewService } from './review.service';
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
+  @Get('mine')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listMineAsProvider(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListReviewsDto,
+  ) {
+    return this.reviewService.listMineAsProvider(BigInt(user.id), query);
+  }
+
   @Get()
   list(@Query() query: ListReviewsDto) {
     return this.reviewService.list(query);

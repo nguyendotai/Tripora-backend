@@ -59,6 +59,15 @@ export class PropertyRepository {
     return this.prisma.property.findFirst({ where: { id, deletedAt: null } });
   }
 
+  /** V7 vong 10 — dung de gom Review cua toan bo Property thuoc 1 Provider. */
+  async findIdsByProviderId(providerId: bigint): Promise<bigint[]> {
+    const rows = await this.prisma.property.findMany({
+      where: { providerId, deletedAt: null },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   create(data: Prisma.PropertyCreateInput): Promise<Property> {
     return this.prisma.property.create({ data });
   }
