@@ -35,6 +35,11 @@ export class CommissionController {
     return this.commissionService.listMine(BigInt(user.id), query);
   }
 
+  @Get('mine/summary')
+  getMySummary(@CurrentUser() user: CurrentUserPayload) {
+    return this.commissionService.getMySummary(BigInt(user.id));
+  }
+
   @Get()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
