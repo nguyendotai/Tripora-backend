@@ -115,6 +115,17 @@ export class CommissionRepository {
     ]);
   }
 
+  /** V7 vong 8 — Commission tu `since` tro ve sau, dung cho trang Analytics (group theo ngay o Service). */
+  findByProviderIdSince(
+    providerId: bigint,
+    since: Date,
+  ): Promise<Commission[]> {
+    return this.prisma.commission.findMany({
+      where: { providerId, createdAt: { gte: since } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   findById(id: bigint): Promise<Commission | null> {
     return this.prisma.commission.findUnique({ where: { id } });
   }
