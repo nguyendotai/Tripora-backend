@@ -1658,6 +1658,19 @@
           }
         },
         {
+          "name": "My Customers (Tour Operator)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tour-bookings/provider/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["tour-bookings", "provider", "customers"]
+            },
+            "description": "**[V7 vong 7]** Yeu cau quyen `booking:view` (Owner/Manager/Booking Staff — Finance Staff bi 403). Nhom toan bo TourBooking theo userId, tra `{userId, email, firstName, lastName, totalBookings, totalSpent, lastBookingAt}[]`, moi nhat truoc."
+          }
+        },
+        {
           "name": "Create Tour Booking",
           "request": {
             "method": "POST",
@@ -2136,6 +2149,19 @@
           }
         },
         {
+          "name": "My Customers (Experience Operator)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/experience-bookings/provider/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["experience-bookings", "provider", "customers"]
+            },
+            "description": "**[V7 vong 7]** Yeu cau quyen `booking:view` (Owner/Manager/Booking Staff — Finance Staff bi 403). Nhom toan bo ExperienceBooking theo userId, tra `{userId, email, firstName, lastName, totalBookings, totalSpent, lastBookingAt}[]`, moi nhat truoc."
+          }
+        },
+        {
           "name": "Create Experience Booking",
           "request": {
             "method": "POST",
@@ -2406,6 +2432,19 @@
               ]
             },
             "description": "Yeu cau dang nhap + co ho so Provider da APPROVED (403 neu khong). Xem Booking cua tat ca Room thuoc cac Property minh so huu (khong phai Booking minh tu dat voi tu cach khach hang — dung /bookings/mine cho truong hop do)."
+          }
+        },
+        {
+          "name": "My Customers (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/provider/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "provider", "customers"]
+            },
+            "description": "**[V7 vong 7]** Yeu cau quyen `booking:view` (Owner/Manager/Booking Staff — Finance Staff bi 403). Nhom toan bo Booking cua Provider theo userId, tra `{userId, email, firstName, lastName, totalBookings, totalSpent, lastBookingAt}[]`, moi nhat truoc."
           }
         },
         {
@@ -2879,6 +2918,19 @@
               ]
             },
             "description": "Yeu cau dang nhap + co Provider profile type=TRANSPORT APPROVED (403 neu khong). Booking cua cac Route minh so huu, tuy chon loc theo 1 routeId."
+          }
+        },
+        {
+          "name": "My Customers (Transportation Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/transport-bookings/provider/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["transport-bookings", "provider", "customers"]
+            },
+            "description": "**[V7 vong 7]** Yeu cau quyen `booking:view` (Owner/Manager/Booking Staff — Finance Staff bi 403). Nhom toan bo TransportBooking theo userId, tra `{userId, email, firstName, lastName, totalBookings, totalSpent, lastBookingAt}[]`, moi nhat truoc."
           }
         },
         {
@@ -3496,6 +3548,19 @@
               ]
             },
             "description": "Yeu cau dang nhap + co Provider profile type=FLIGHT APPROVED (403 neu khong). Booking cua cac Flight minh so huu, tuy chon loc theo 1 flightId."
+          }
+        },
+        {
+          "name": "My Customers (Airline Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/flight-bookings/provider/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["flight-bookings", "provider", "customers"]
+            },
+            "description": "**[V7 vong 7]** Yeu cau quyen `booking:view` (Owner/Manager/Booking Staff — Finance Staff bi 403). Nhom toan bo FlightBooking theo userId, tra `{userId, email, firstName, lastName, totalBookings, totalSpent, lastBookingAt}[]`, moi nhat truoc."
           }
         },
         {
