@@ -691,6 +691,23 @@
           }
         },
         {
+          "name": "My Reviews (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "mine"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V7 vong 10]** Yeu cau dang nhap + la thanh vien Provider type HOTEL da APPROVED — khong can permission rieng (moi role deu xem duoc, chi manage moi can property:manage). Tra Review cua toan bo Property thuoc dung Provider dang dang nhap."
+          }
+        },
+        {
           "name": "Create Review",
           "request": {
             "method": "POST",
