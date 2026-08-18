@@ -31,9 +31,21 @@ export class ReviewRepository {
     return this.prisma.review.findFirst({ where: { id, deletedAt: null } });
   }
 
-  findByUserAndDestination(userId: bigint, destinationId: bigint): Promise<Review | null> {
+  findByUserAndDestination(
+    userId: bigint,
+    destinationId: bigint,
+  ): Promise<Review | null> {
     return this.prisma.review.findUnique({
       where: { userId_destinationId: { userId, destinationId } },
+    });
+  }
+
+  findByUserAndProperty(
+    userId: bigint,
+    propertyId: bigint,
+  ): Promise<Review | null> {
+    return this.prisma.review.findUnique({
+      where: { userId_propertyId: { userId, propertyId } },
     });
   }
 
@@ -46,6 +58,9 @@ export class ReviewRepository {
   }
 
   softDelete(id: bigint): Promise<Review> {
-    return this.prisma.review.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.review.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

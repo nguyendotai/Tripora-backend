@@ -120,21 +120,28 @@ model WishlistItem {
   @@map("wishlist_items")
 }
 
+// V7 vong 9 — destinationId thanh optional + them propertyId optional de Review gan duoc voi
+// san pham Provider ban, khong chi Destination. MySQL cho phep nhieu NULL trong unique index nen
+// review Destination cu khong doi hanh vi. Dung dung 1 trong 2 (XOR, validate o Service).
 model Review {
   id            BigInt    @id @default(autoincrement())
   userId        BigInt    @map("user_id")
-  destinationId BigInt    @map("destination_id")
+  destinationId BigInt?   @map("destination_id")
+  propertyId    BigInt?   @map("property_id")
   rating        Int
   content       String?   @db.Text
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
 
-  user        User        @relation(fields: [userId], references: [id])
-  destination Destination @relation(fields: [destinationId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  destination Destination? @relation(fields: [destinationId], references: [id])
+  property    Property?    @relation(fields: [propertyId], references: [id])
 
   @@unique([userId, destinationId])
+  @@unique([userId, propertyId])
   @@index([destinationId])
+  @@index([propertyId])
   @@map("reviews")
 }
 
@@ -326,6 +333,7 @@ model Property {
   destination Destination?   @relation(fields: [destinationId], references: [id])
   rooms       Room[]
   bookings    HotelBooking[]
+  reviews     Review[]
 
   @@index([providerId])
   @@index([destinationId])
