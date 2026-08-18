@@ -1,12 +1,22 @@
 import { Module } from '@nestjs/common';
+import { BookingModule } from '../booking/booking.module';
 import { DestinationModule } from '../destination/destination.module';
 import { NotificationModule } from '../notification/notification.module';
+import { PropertyModule } from '../property/property.module';
 import { ReviewController } from './review.controller';
 import { ReviewRepository } from './review.repository';
 import { ReviewService } from './review.service';
 
+// V7 vong 9 — them PropertyModule (PropertyRepository) + BookingModule (BookingRepository, dung de
+// kiem tra "da mua" truoc khi cho Review Property) — an toan, BookingModule khong import nguoc lai
+// ReviewModule nen khong tao circular dependency.
 @Module({
-  imports: [DestinationModule, NotificationModule],
+  imports: [
+    DestinationModule,
+    NotificationModule,
+    PropertyModule,
+    BookingModule,
+  ],
   controllers: [ReviewController],
   providers: [ReviewRepository, ReviewService],
 })
