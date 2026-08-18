@@ -204,6 +204,22 @@ export class BookingRepository {
     });
   }
 
+  /** V7 vong 9 — dieu kien "da mua" truoc khi cho Review Property (khong dung BookingStatus.COMPLETED
+   * vi enum nay chua tung duoc set o dau trong code, CONFIRMED la bang chung dang tin cay hien co). */
+  async hasConfirmedBookingForProperty(
+    userId: bigint,
+    propertyId: bigint,
+  ): Promise<boolean> {
+    const count = await this.prisma.hotelBooking.count({
+      where: {
+        userId,
+        propertyId,
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
+      },
+    });
+    return count > 0;
+  }
+
   private applyStatusFilter(
     base: Prisma.HotelBookingWhereInput,
     filter: 'upcoming' | 'completed' | 'cancelled' | undefined,

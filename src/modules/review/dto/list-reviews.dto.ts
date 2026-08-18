@@ -7,6 +7,10 @@ export class ListReviewsDto {
   destinationId?: string;
 
   @IsOptional()
+  @IsNumberString()
+  propertyId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
