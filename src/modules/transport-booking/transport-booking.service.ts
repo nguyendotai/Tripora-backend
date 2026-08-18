@@ -9,14 +9,13 @@ import {
   BookingDomain,
   BookingStatus,
   Prisma,
-  ProviderStatus,
   ProviderType,
   TransportRouteStatus,
   VehicleStatus,
 } from '@prisma/client';
 import { CouponService } from '../coupon/coupon.service';
 import { PaymentService } from '../payment/payment.service';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { TransportRouteRepository } from '../transport-route/transport-route.repository';
 import { TransportScheduleRepository } from '../transport-schedule/transport-schedule.repository';
 import { VehicleRepository } from '../vehicle/vehicle.repository';
@@ -37,7 +36,7 @@ export class TransportBookingService {
     private readonly transportRouteRepository: TransportRouteRepository,
     private readonly vehicleRepository: VehicleRepository,
     private readonly transportScheduleRepository: TransportScheduleRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly paymentService: PaymentService,
     private readonly couponService: CouponService,
   ) {}
@@ -165,16 +164,10 @@ export class TransportBookingService {
     userId: bigint,
     query: ListProviderTransportBookingsDto,
   ) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TRANSPORT
-    ) {
-      throw new ForbiddenException(
-        'You need an approved transport operator profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.TRANSPORT, permission: 'booking:view' },
+    );
 
     const today = this.today();
     return this.transportBookingRepository.findManyByProvider(

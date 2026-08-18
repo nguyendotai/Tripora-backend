@@ -11,7 +11,6 @@ import {
   FlightSeatStatus,
   FlightStatus,
   Prisma,
-  ProviderStatus,
   ProviderType,
   SeatClass,
 } from '@prisma/client';
@@ -19,7 +18,7 @@ import { AirportRepository } from '../airport/airport.repository';
 import { CouponService } from '../coupon/coupon.service';
 import { FlightSeatRepository } from '../flight-seat/flight-seat.repository';
 import { PaymentService } from '../payment/payment.service';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import {
   buildPaginated,
   resolvePagination,
@@ -35,7 +34,7 @@ export class FlightBookingService {
     private readonly flightBookingRepository: FlightBookingRepository,
     private readonly flightSeatRepository: FlightSeatRepository,
     private readonly airportRepository: AirportRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly paymentService: PaymentService,
     private readonly couponService: CouponService,
   ) {}
@@ -188,16 +187,10 @@ export class FlightBookingService {
     userId: bigint,
     query: ListProviderFlightBookingsDto,
   ) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.FLIGHT
-    ) {
-      throw new ForbiddenException(
-        'You need an approved airline profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.FLIGHT, permission: 'booking:view' },
+    );
 
     const today = this.today();
     return this.flightBookingRepository.findManyByProvider(
