@@ -40,6 +40,11 @@ export class CommissionController {
     return this.commissionService.getMySummary(BigInt(user.id));
   }
 
+  @Get('mine/analytics')
+  getMyAnalytics(@CurrentUser() user: CurrentUserPayload) {
+    return this.commissionService.getMyAnalytics(BigInt(user.id));
+  }
+
   @Get()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)

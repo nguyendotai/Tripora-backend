@@ -5,6 +5,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { groupCommissionsByDay } from '../../shared/utils/group-commissions-by-day';
 import { CommissionRepository } from './commission.repository';
 import { ListCommissionsDto } from './dto/list-commissions.dto';
 import { ListMyCommissionsDto } from './dto/list-my-commissions.dto';
@@ -113,6 +114,28 @@ export class CommissionService {
       },
     );
     return this.commissionRepository.getSummary(provider.id);
+  }
+
+  /** V7 vong 8 — doanh thu + so giao dich theo ngay, 30 ngay gan nhat, cung quyen voi listMine. */
+  async getMyAnalytics(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        permission: 'finance:view',
+      },
+    );
+    const days = 30;
+    const today = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+    );
+    const since = new Date(today);
+    since.setUTCDate(since.getUTCDate() - (days - 1));
+
+    const commissions = await this.commissionRepository.findByProviderIdSince(
+      provider.id,
+      since,
+    );
+    return groupCommissionsByDay(commissions, days);
   }
 
   /** Admin danh dau 1 Commission da tra cho Provider (chuyen khoan ngoai he thong) — toi gian,
