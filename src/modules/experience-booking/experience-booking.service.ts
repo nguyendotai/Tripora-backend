@@ -21,6 +21,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { groupBookingsByCustomer } from '../../shared/utils/group-bookings-by-customer';
 import { CheckExperienceAvailabilityDto } from './dto/check-experience-availability.dto';
 import { CreateExperienceBookingDto } from './dto/create-experience-booking.dto';
 import { ListAllExperienceBookingsDto } from './dto/list-all-experience-bookings.dto';
@@ -166,6 +167,23 @@ export class ExperienceBookingService {
       query.status,
       today,
     );
+  }
+
+  /** V7 vong 7 — Provider xem danh sach khach hang, nhom tu toan bo ExperienceBooking cua minh. */
+  async listCustomersAsProvider(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.ACTIVITY, permission: 'booking:view' },
+    );
+
+    const today = this.today();
+    const bookings = await this.experienceBookingRepository.findManyByProvider(
+      provider.id,
+      undefined,
+      undefined,
+      today,
+    );
+    return groupBookingsByCustomer(bookings);
   }
 
   /** Chi huy duoc booking CONFIRMED cua chinh minh va departureDate chua toi. */

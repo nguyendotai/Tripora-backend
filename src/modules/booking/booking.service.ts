@@ -27,6 +27,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { groupBookingsByCustomer } from '../../shared/utils/group-bookings-by-customer';
 
 const MAX_NIGHTS = 30;
 
@@ -183,6 +184,25 @@ export class BookingService {
       query.status,
       today,
     );
+  }
+
+  /** V7 vong 7 — Provider xem danh sach khach hang, nhom tu toan bo Booking cua minh. */
+  async listCustomersAsProvider(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { permission: 'booking:view' },
+    );
+
+    const today = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+    );
+    const bookings = await this.bookingRepository.findManyByProvider(
+      provider.id,
+      undefined,
+      undefined,
+      today,
+    );
+    return groupBookingsByCustomer(bookings);
   }
 
   /** Chi huy duoc booking CONFIRMED cua chinh minh va checkInDate chua toi. */
