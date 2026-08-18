@@ -3739,6 +3739,19 @@
           }
         },
         {
+          "name": "Get My Commission Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/mine/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "mine", "analytics"]
+            },
+            "description": "**[V7 vong 8]** Cung quyen `finance:view` nhu List My Commissions. Tra mang dung 30 phan tu `{date, totalRevenue, totalBookings}[]` (tang dan theo ngay, zero-fill ngay khong co giao dich), dung cho bieu do Analytics tren trang Overview."
+          }
+        },
+        {
           "name": "Mark Commission Paid Out (Admin)",
           "request": {
             "method": "PATCH",
