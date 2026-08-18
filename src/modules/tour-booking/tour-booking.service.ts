@@ -9,13 +9,12 @@ import {
   BookingDomain,
   BookingStatus,
   Prisma,
-  ProviderStatus,
   ProviderType,
   TourStatus,
 } from '@prisma/client';
 import { CouponService } from '../coupon/coupon.service';
 import { PaymentService } from '../payment/payment.service';
-import { ProviderRepository } from '../provider/provider.repository';
+import { OrganizationMemberService } from '../provider/organization-member.service';
 import { TourRepository } from '../tour/tour.repository';
 import { TourScheduleRepository } from '../tour-schedule/tour-schedule.repository';
 import {
@@ -34,7 +33,7 @@ export class TourBookingService {
     private readonly tourBookingRepository: TourBookingRepository,
     private readonly tourRepository: TourRepository,
     private readonly tourScheduleRepository: TourScheduleRepository,
-    private readonly providerRepository: ProviderRepository,
+    private readonly organizationMemberService: OrganizationMemberService,
     private readonly paymentService: PaymentService,
     private readonly couponService: CouponService,
   ) {}
@@ -146,16 +145,10 @@ export class TourBookingService {
 
   /** Tour Operator — xem TourBooking cua cac Tour minh so huu, optional loc theo 1 Tour. */
   async listMineAsProvider(userId: bigint, query: ListProviderTourBookingsDto) {
-    const provider = await this.providerRepository.findByUserId(userId);
-    if (
-      !provider ||
-      provider.status !== ProviderStatus.APPROVED ||
-      provider.type !== ProviderType.TOUR
-    ) {
-      throw new ForbiddenException(
-        'You need an approved tour operator profile to do this',
-      );
-    }
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.TOUR, permission: 'booking:view' },
+    );
 
     const today = this.today();
     return this.tourBookingRepository.findManyByProvider(
