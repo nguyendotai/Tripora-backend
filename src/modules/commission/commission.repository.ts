@@ -128,4 +128,31 @@ export class CommissionRepository {
       },
     });
   }
+
+  /** V7 vong 6 — tong hop cho trang Overview cua Provider, mirror pattern report.repository.ts. */
+  async getSummary(providerId: bigint) {
+    const [totalTransactions, totalAgg, paidAgg, pendingAgg] =
+      await Promise.all([
+        this.prisma.commission.count({ where: { providerId } }),
+        this.prisma.commission.aggregate({
+          where: { providerId },
+          _sum: { providerAmount: true },
+        }),
+        this.prisma.commission.aggregate({
+          where: { providerId, payoutStatus: 'PAID' },
+          _sum: { providerAmount: true },
+        }),
+        this.prisma.commission.aggregate({
+          where: { providerId, payoutStatus: 'PENDING' },
+          _sum: { providerAmount: true },
+        }),
+      ]);
+
+    return {
+      totalTransactions,
+      totalEarned: totalAgg._sum.providerAmount ?? new Prisma.Decimal(0),
+      totalPaid: paidAgg._sum.providerAmount ?? new Prisma.Decimal(0),
+      totalPending: pendingAgg._sum.providerAmount ?? new Prisma.Decimal(0),
+    };
+  }
 }
