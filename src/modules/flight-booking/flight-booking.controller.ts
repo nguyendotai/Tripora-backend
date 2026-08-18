@@ -42,6 +42,13 @@ export class FlightBookingController {
     return this.flightBookingService.listMineAsProvider(BigInt(user.id), query);
   }
 
+  @Get('provider/customers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listCustomersAsProvider(@CurrentUser() user: CurrentUserPayload) {
+    return this.flightBookingService.listCustomersAsProvider(BigInt(user.id));
+  }
+
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

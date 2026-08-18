@@ -23,6 +23,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { groupBookingsByCustomer } from '../../shared/utils/group-bookings-by-customer';
 import { CheckTransportAvailabilityDto } from './dto/check-transport-availability.dto';
 import { CreateTransportBookingDto } from './dto/create-transport-booking.dto';
 import { ListAllTransportBookingsDto } from './dto/list-all-transport-bookings.dto';
@@ -176,6 +177,23 @@ export class TransportBookingService {
       query.status,
       today,
     );
+  }
+
+  /** V7 vong 7 — Provider xem danh sach khach hang, nhom tu toan bo TransportBooking cua minh. */
+  async listCustomersAsProvider(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.TRANSPORT, permission: 'booking:view' },
+    );
+
+    const today = this.today();
+    const bookings = await this.transportBookingRepository.findManyByProvider(
+      provider.id,
+      undefined,
+      undefined,
+      today,
+    );
+    return groupBookingsByCustomer(bookings);
   }
 
   /** Chi huy duoc booking CONFIRMED cua chinh minh va departureDate chua toi. */

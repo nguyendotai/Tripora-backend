@@ -48,6 +48,15 @@ export class TransportBookingController {
     return this.transportBookingService.listMineAsProvider(BigInt(user.id), query);
   }
 
+  @Get('provider/customers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  listCustomersAsProvider(@CurrentUser() user: CurrentUserPayload) {
+    return this.transportBookingService.listCustomersAsProvider(
+      BigInt(user.id),
+    );
+  }
+
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

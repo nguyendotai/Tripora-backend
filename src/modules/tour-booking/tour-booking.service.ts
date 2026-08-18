@@ -21,6 +21,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { groupBookingsByCustomer } from '../../shared/utils/group-bookings-by-customer';
 import { CheckTourAvailabilityDto } from './dto/check-tour-availability.dto';
 import { CreateTourBookingDto } from './dto/create-tour-booking.dto';
 import { ListAllTourBookingsDto } from './dto/list-all-tour-bookings.dto';
@@ -157,6 +158,23 @@ export class TourBookingService {
       query.status,
       today,
     );
+  }
+
+  /** V7 vong 7 — Provider xem danh sach khach hang, nhom tu toan bo TourBooking cua minh. */
+  async listCustomersAsProvider(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      { providerType: ProviderType.TOUR, permission: 'booking:view' },
+    );
+
+    const today = this.today();
+    const bookings = await this.tourBookingRepository.findManyByProvider(
+      provider.id,
+      undefined,
+      undefined,
+      today,
+    );
+    return groupBookingsByCustomer(bookings);
   }
 
   /** Chi huy duoc booking CONFIRMED cua chinh minh va departureDate chua toi. */
