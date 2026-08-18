@@ -104,6 +104,17 @@ export class CommissionService {
     return buildPaginated(items, totalItems, page, limit);
   }
 
+  /** V7 vong 6 — so lieu tong hop cho trang Overview cua Provider, cung quyen voi listMine. */
+  async getMySummary(userId: bigint) {
+    const { provider } = await this.organizationMemberService.requireMembership(
+      userId,
+      {
+        permission: 'finance:view',
+      },
+    );
+    return this.commissionRepository.getSummary(provider.id);
+  }
+
   /** Admin danh dau 1 Commission da tra cho Provider (chuyen khoan ngoai he thong) — toi gian,
    * tung dong 1, khong batch/khong tich hop API chuyen tien that. */
   async markPaidOut(id: bigint) {

@@ -3661,6 +3661,19 @@
           }
         },
         {
+          "name": "Get My Commission Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/mine/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "mine", "summary"]
+            },
+            "description": "**[V7 vong 6]** Cung quyen `finance:view` nhu List My Commissions. Tra ve `{ totalTransactions, totalEarned, totalPaid, totalPending }` tong hop tu Commission cua dung Provider dang dang nhap, dung cho trang Overview."
+          }
+        },
+        {
           "name": "Mark Commission Paid Out (Admin)",
           "request": {
             "method": "PATCH",
