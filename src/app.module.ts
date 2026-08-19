@@ -41,6 +41,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { UserModule } from './modules/user/user.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { ReviewModule } from './modules/review/review.module';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { ReviewModule } from './modules/review/review.module';
     CouponModule,
     CommissionModule,
     BookingExpirationModule,
+    PostModule,
   ],
   controllers: [],
   providers: [],
