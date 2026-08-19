@@ -4,7 +4,8 @@ import { OrgMemberRole } from '@prisma/client';
 // OrganizationMemberService.requireMembership cho CRUD san pham. V7 vong 4 them 'finance:view'
 // cho Finance Staff. V7 vong 5 them 'booking:view' cho Booking Staff — truoc do "Provider xem
 // Booking" (GET .../provider ca 5 domain) van dung thang providerRepository.findByUserId (pattern
-// cu, chi Owner goi duoc), chua migrate cung dot voi CRUD o vong 2.
+// cu, chi Owner goi duoc), chua migrate cung dot voi CRUD o vong 2. V7 vong 11 them
+// 'promotion:manage' cho Provider tu tao Promotion san pham minh (chi Owner/Manager).
 export type Permission =
   | 'property:manage'
   | 'tour:manage'
@@ -14,7 +15,8 @@ export type Permission =
   | 'member:manage'
   | 'member:view'
   | 'finance:view'
-  | 'booking:view';
+  | 'booking:view'
+  | 'promotion:manage';
 
 const MANAGE_PERMISSIONS: Permission[] = [
   'property:manage',
@@ -26,6 +28,7 @@ const MANAGE_PERMISSIONS: Permission[] = [
   'member:view',
   'finance:view',
   'booking:view',
+  'promotion:manage',
 ];
 
 export const ROLE_PERMISSIONS: Record<OrgMemberRole, Set<Permission>> = {

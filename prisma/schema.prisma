@@ -272,6 +272,7 @@ model Provider {
   aircrafts           Aircraft[]
   flights             Flight[]
   commissions         Commission[]
+  promotions          Promotion[]
 
   @@map("providers")
 }
@@ -1201,8 +1202,12 @@ model CouponRedemption {
 // Giam gia tu dong, khong can ma — ap dung khi tao Booking neu khach khong nhap couponCode.
 // Khong theo doi usageLimit/redemption (khac Coupon) vi la campaign toan san, khong gioi han theo
 // nguoi dung. priority cao hon duoc chon truoc khi nhieu Promotion cung khop 1 luc.
+// V7 vong 11: providerId null = Admin tao, ap dung toan san trong applicableDomains; providerId co
+// gia tri = Provider tu tao cho dung 1 domain cua minh (Service tu gan applicableDomains, khong
+// nhan tu client) — findBestActivePromotion khop ca 2 loai, uu tien theo priority.
 model Promotion {
   id                BigInt       @id @default(autoincrement())
+  providerId        BigInt?      @map("provider_id")
   name              String
   discountType      DiscountType @map("discount_type")
   discountValue     Decimal      @map("discount_value") @db.Decimal(10, 2)
@@ -1216,6 +1221,9 @@ model Promotion {
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
+  provider Provider? @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
   @@map("promotions")
 }
 

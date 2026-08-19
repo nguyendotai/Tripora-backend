@@ -14,6 +14,7 @@ export interface FindBestPromotionParams {
   bookingDomain: BookingDomain;
   subtotal: string;
   now: Date;
+  providerId: bigint;
 }
 
 @Injectable()
@@ -82,7 +83,8 @@ export class CouponRepository {
   /**
    * Loc theo ACTIVE/con han/minOrderAmount o DB, loc tiep applicableDomains (Json array) o JS —
    * MySQL/Prisma khong ho tro filter "array contains" 1 cau portable, bang Promotion du nho de
-   * chap nhan duoc. uu tien priority cao hon, chi lay 1 ket qua tot nhat.
+   * chap nhan duoc. uu tien priority cao hon, chi lay 1 ket qua tot nhat. Khop ca Promotion toan
+   * san (providerId null, Admin tao) lan Promotion rieng cua dung Provider dang dat (V7 vong 11).
    */
   async findBestActivePromotion(
     params: FindBestPromotionParams,
@@ -93,6 +95,7 @@ export class CouponRepository {
         validFrom: { lte: params.now },
         validUntil: { gte: params.now },
         minOrderAmount: { lte: params.subtotal },
+        OR: [{ providerId: null }, { providerId: params.providerId }],
       },
       orderBy: { priority: 'desc' },
     });
@@ -155,6 +158,25 @@ export class CouponRepository {
     return this.prisma.$transaction([
       this.prisma.promotion.findMany({ skip, take, orderBy: { createdAt: 'desc' } }),
       this.prisma.promotion.count(),
+    ]);
+  }
+
+  // ==================== Promotion CRUD (Provider tu quan ly, V7 vong 11) ====================
+
+  async findPromotionsByProvider(
+    providerId: bigint,
+    skip: number,
+    take: number,
+  ): Promise<[Promotion[], number]> {
+    const where: Prisma.PromotionWhereInput = { providerId };
+    return this.prisma.$transaction([
+      this.prisma.promotion.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.promotion.count({ where }),
     ]);
   }
 }

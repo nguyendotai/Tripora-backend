@@ -120,6 +120,7 @@ export class TransportBookingService {
       bookingId: result.booking.id,
       subtotal: result.booking.totalPrice,
       couponCode: dto.couponCode,
+      providerId: route.providerId,
     });
 
     const { checkoutUrl } = await this.paymentService.createForBooking({

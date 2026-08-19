@@ -130,6 +130,7 @@ export class BookingService {
       bookingId: result.booking.id,
       subtotal: result.booking.totalPrice,
       couponCode: dto.couponCode,
+      providerId: property.providerId,
     });
 
     const { checkoutUrl } = await this.paymentService.createForBooking({

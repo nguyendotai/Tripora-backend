@@ -18,6 +18,8 @@ export interface ApplyDiscountParams {
   bookingId: bigint;
   subtotal: Prisma.Decimal;
   couponCode?: string;
+  /** Provider so huu san pham dang dat — dung de khop them Promotion rieng cua Provider do (V7 vong 11). */
+  providerId: bigint;
 }
 
 export interface ApplyDiscountResult {
@@ -135,6 +137,7 @@ export class CouponService {
       bookingDomain: params.bookingDomain,
       subtotal: params.subtotal.toString(),
       now: new Date(),
+      providerId: params.providerId,
     });
     if (!promotion) {
       return { discountAmount: new Prisma.Decimal(0) };
