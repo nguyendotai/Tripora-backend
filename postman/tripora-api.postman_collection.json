@@ -787,6 +787,109 @@
       ]
     },
     {
+      "name": "Post",
+      "item": [
+        {
+          "name": "List Posts (Feed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true },
+                { "key": "destinationId", "value": "1", "disabled": true }
+              ]
+            },
+            "description": "**[V8 vong 1]** Cong khai, khong can dang nhap. Feed cong dong, moi nhat truoc."
+          }
+        },
+        {
+          "name": "List My Posts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/posts/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "mine"]
+            }
+          }
+        },
+        {
+          "name": "Get Post",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Chuyen di Ha Long tuyet voi!\",\n  \"images\": [\"https://res.cloudinary.com/demo/a.jpg\"],\n  \"destinationId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"]
+            },
+            "description": "images toi thieu 1, toi da 10 (upload truoc qua POST /uploads/image). destinationId tuy chon, 400 neu khong ton tai."
+          }
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Cap nhat lai caption.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu bai moi duoc sua. 403 neu khong phai chu so huu."
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chu bai hoac role ADMIN (kiem duyet) moi duoc xoa. 403 neu khong phai chu so huu va khong phai ADMIN. Soft delete (204 No Content), khong xoa cung."
+          }
+        }
+      ]
+    },
+    {
       "name": "Blog",
       "item": [
         {
