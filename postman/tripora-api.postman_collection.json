@@ -3978,6 +3978,76 @@
               "variable": [{ "key": "id", "value": "1" }]
             }
           }
+        },
+        {
+          "name": "List My Promotions (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/mine?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "mine"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V7 vong 11]** Provider xem Promotion cua chinh to chuc minh, khong can permission rieng."
+          }
+        },
+        {
+          "name": "Create My Promotion (Provider)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Giam 10% dat phong thang nay\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 10,\n  \"priority\": 1,\n  \"validFrom\": \"2026-09-01T00:00:00.000Z\",\n  \"validUntil\": \"2026-09-30T23:59:59.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/promotions/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "mine"]
+            },
+            "description": "**[V7 vong 11]** Yeu cau quyen `promotion:manage` (Owner/Manager). Khong nhan `applicableDomains` — Service tu gan dung 1 domain theo ProviderType dang dang nhap."
+          }
+        },
+        {
+          "name": "Update My Promotion (Provider)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/promotions/mine/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "mine", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Delete My Promotion (Provider)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/mine/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "mine", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
         }
       ]
     },
