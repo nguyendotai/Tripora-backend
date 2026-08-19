@@ -144,6 +144,7 @@ export class FlightBookingService {
     const { discountAmount } = await this.couponService.applyDiscount({
       userId,
       bookingDomain: BookingDomain.FLIGHT,
+      providerId: schedule.flight.providerId,
       bookingId: result.booking.id,
       subtotal: totalPrice,
       couponCode: dto.couponCode,

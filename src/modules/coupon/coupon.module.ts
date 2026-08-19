@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ProviderModule } from '../provider/provider.module';
 import { CouponController } from './coupon.controller';
 import { CouponRepository } from './coupon.repository';
 import { CouponService } from './coupon.service';
@@ -8,8 +9,12 @@ import { PromotionService } from './promotion.service';
 /** Module doc lap, khong import bat ky module Booking nao — ca 5 module Booking va
  * BookingExpirationModule import CouponModule (giong cach import PaymentModule), khong co
  * chieu nguoc nao, khong co rui ro circular dependency. Promotion dung chung CouponRepository
- * (cung 1 module) thay vi tach PromotionModule rieng — 2 entity lien quan chat, khong can tach. */
+ * (cung 1 module) thay vi tach PromotionModule rieng — 2 entity lien quan chat, khong can tach.
+ * V7 vong 11: them ProviderModule de PromotionService dung OrganizationMemberService cho
+ * GET/POST/PATCH/DELETE /promotions/mine — an toan, ProviderModule khong import nguoc lai
+ * CouponModule. */
 @Module({
+  imports: [ProviderModule],
   controllers: [CouponController, PromotionController],
   providers: [CouponService, PromotionService, CouponRepository],
   exports: [CouponService, CouponRepository],
