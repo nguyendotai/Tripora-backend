@@ -47,6 +47,7 @@ model User {
   invoices           Invoice[]
   couponRedemptions  CouponRedemption[]
   refunds            Refund[]
+  posts              Post[]
 
   @@map("users")
 }
@@ -83,6 +84,7 @@ model Destination {
   properties    Property[]
   tours         Tour[]
   experiences   Experience[]
+  posts         Post[]
 
   @@index([country])
   @@map("destinations")
@@ -1290,4 +1292,27 @@ model Commission {
 
   @@index([providerId])
   @@map("commissions")
+}
+
+// V8 vong 1 — Post (Travel Story): noi dung du lich nguoi dung tu dang, gan Destination tuy chon,
+// bat buoc it nhat 1 anh. Gop 2 ten bang "posts"/"travel_stories" trong workflow_and_database.md
+// muc 24 thanh 1 model duy nhat (YAGNI — chua co ly do tach story nhieu-ngay/nhieu-item rieng voi
+// post don, tranh over-engineer som). Kiem duyet an bang deletedAt (khong xoa cung) qua chung 1
+// endpoint remove() voi chinh chu, mirror Review.remove() (userId=chu bai hoac role=ADMIN).
+model Post {
+  id            BigInt    @id @default(autoincrement())
+  userId        BigInt    @map("user_id")
+  destinationId BigInt?   @map("destination_id")
+  caption       String    @db.Text
+  images        Json
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  user        User         @relation(fields: [userId], references: [id])
+  destination Destination? @relation(fields: [destinationId], references: [id])
+
+  @@index([userId])
+  @@index([destinationId])
+  @@map("posts")
 }
