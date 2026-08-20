@@ -11,10 +11,12 @@ import { OrganizationMemberService } from '../provider/organization-member.servi
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
+  clampLimit,
   resolvePagination,
 } from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreatePropertyDto } from './dto/create-property.dto';
+import { ListPopularPropertiesDto } from './dto/list-popular-properties.dto';
 import { ListPropertiesDto } from './dto/list-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyRepository } from './property.repository';
@@ -60,6 +62,19 @@ export class PropertyService {
     }));
 
     return buildPaginated(itemsWithPrice, totalItems, page, limit);
+  }
+
+  /** Public — Home page "Khach san noi bat". Khong phan trang, chi tra top N. */
+  async listPopular(query: ListPopularPropertiesDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    const items = await this.propertyRepository.findPopular(limit);
+    const minPrices = await this.propertyRepository.findMinPricesByPropertyIds(
+      items.map((item) => item.id),
+    );
+    return items.map((item) => ({
+      ...item,
+      fromPrice: minPrices.get(item.id)?.toString() ?? null,
+    }));
   }
 
   async getBySlug(slug: string) {

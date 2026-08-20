@@ -6,10 +6,11 @@ import {
 import { Promotion } from '@prisma/client';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { providerTypeToBookingDomain } from '../../shared/utils/provider-type-to-booking-domain';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import { buildPaginated, clampLimit, resolvePagination } from '../../shared/utils/pagination';
 import { CouponRepository } from './coupon.repository';
 import { CreateMyPromotionDto } from './dto/create-my-promotion.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
+import { ListActivePromotionsDto } from './dto/list-active-promotions.dto';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { UpdateMyPromotionDto } from './dto/update-my-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
@@ -26,6 +27,12 @@ export class PromotionService {
     private readonly couponRepository: CouponRepository,
     private readonly organizationMemberService: OrganizationMemberService,
   ) {}
+
+  /** Public — Home page "Uu dai noi bat". Khong phan trang, chi tra top N. */
+  listActive(query: ListActivePromotionsDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    return this.couponRepository.findActivePromotions(limit, new Date());
+  }
 
   async listAll(query: ListPromotionsDto) {
     const { page, limit, skip, take } = resolvePagination(query);

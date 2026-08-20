@@ -22,6 +22,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateTourDto } from './dto/create-tour.dto';
+import { ListPopularToursDto } from './dto/list-popular-tours.dto';
 import { ListToursDto } from './dto/list-tours.dto';
 import { ReviewTourDto } from './dto/review-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
@@ -35,6 +36,12 @@ export class TourController {
   @Get()
   list(@Query() query: ListToursDto) {
     return this.tourService.list(query);
+  }
+
+  // Home page — dat truoc ':slug' de khong bi nuot route.
+  @Get('popular')
+  listPopular(@Query() query: ListPopularToursDto) {
+    return this.tourService.listPopular(query);
   }
 
   @Get('mine')

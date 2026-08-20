@@ -136,6 +136,21 @@ export class CouponRepository {
     ]);
   }
 
+  /** Home page "Uu dai noi bat" — chi lay Promotion toan san (providerId null), Promotion rieng
+   * cua 1 Provider can ngu canh san pham nen khong hop de hien an danh o Home. */
+  findActivePromotions(limit: number, now: Date): Promise<Promotion[]> {
+    return this.prisma.promotion.findMany({
+      where: {
+        status: 'ACTIVE',
+        providerId: null,
+        validFrom: { lte: now },
+        validUntil: { gte: now },
+      },
+      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+    });
+  }
+
   // ==================== Promotion CRUD (Admin) ====================
 
   createPromotion(data: Prisma.PromotionCreateInput): Promise<Promotion> {

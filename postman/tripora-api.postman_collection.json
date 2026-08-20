@@ -220,6 +220,20 @@
           }
         },
         {
+          "name": "List Popular Destinations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinations/popular?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations", "popular"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[Home page]** Public. Duoc luu (Wishlist) nhieu nhat, khong phan trang, chi tra mang top N."
+          }
+        },
+        {
           "name": "Get Destination by Slug",
           "request": {
             "method": "GET",
@@ -688,6 +702,20 @@
               ]
             },
             "description": "Public. Filter theo destinationId (tuy chon). Tra { items, pagination }, moi item kem thong tin user (id, firstName, lastName)."
+          }
+        },
+        {
+          "name": "List Review Highlights",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/highlights?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "highlights"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[Home page]** Public. Rating >=4, co content, moi nhat truoc, khong phan trang. Kem user (avatar) + property/destination (id, name, slug)."
           }
         },
         {
@@ -1557,6 +1585,20 @@
           }
         },
         {
+          "name": "List Popular Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/properties/popular?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", "popular"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[Home page]** Public. Duoc dat nhieu nhat (HotelBooking CONFIRMED/COMPLETED), khong phan trang, chi tra mang top N."
+          }
+        },
+        {
           "name": "Get Property by Slug (Public)",
           "request": {
             "method": "GET",
@@ -1703,6 +1745,20 @@
               ]
             },
             "description": "Public. Chi tra Tour da APPROVED. Filter q (contains title) / destinationId. Sort newest (mac dinh) hoac title_asc."
+          }
+        },
+        {
+          "name": "List Popular Tours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tours/popular?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["tours", "popular"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[Home page]** Public. Duoc dat nhieu nhat (TourBooking CONFIRMED/COMPLETED), khong phan trang, chi tra mang top N."
           }
         },
         {
@@ -2286,6 +2342,20 @@
               ]
             },
             "description": "Public. Chi tra Experience da APPROVED."
+          }
+        },
+        {
+          "name": "List Popular Experiences",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/experiences/popular?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["experiences", "popular"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[Home page]** Public. Duoc dat nhieu nhat (ExperienceBooking CONFIRMED/COMPLETED), khong phan trang, chi tra mang top N."
           }
         },
         {
@@ -4263,6 +4333,20 @@
     {
       "name": "Promotion",
       "item": [
+        {
+          "name": "List Active Promotions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/promotions/active?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["promotions", "active"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[Home page]** Public — khac moi route khac cua Promotion (deu can ADMIN hoac Provider tu quan). Chi tra Promotion toan san (providerId null), status ACTIVE, dang trong validFrom-validUntil, khong phan trang."
+          }
+        },
         {
           "name": "List Promotions (Admin)",
           "request": {

@@ -6,9 +6,27 @@ const REVIEW_INCLUDE = {
   user: { select: { id: true, firstName: true, lastName: true } },
 } satisfies Prisma.ReviewInclude;
 
+// Home page "Danh gia tu khach hang" — can them avatar + ten San pham/Diem den de card hien du
+// ngu canh, khac REVIEW_INCLUDE dung cho list thong thuong (khong can 2 field nay).
+const REVIEW_HIGHLIGHT_INCLUDE = {
+  user: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+  property: { select: { id: true, name: true, slug: true } },
+  destination: { select: { id: true, name: true, slug: true } },
+} satisfies Prisma.ReviewInclude;
+
 @Injectable()
 export class ReviewRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Home page — review noi bat: rating >=4, co noi dung, moi nhat truoc. */
+  findHighlights(limit: number) {
+    return this.prisma.review.findMany({
+      where: { deletedAt: null, rating: { gte: 4 }, content: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: REVIEW_HIGHLIGHT_INCLUDE,
+    });
+  }
 
   async findMany(
     where: Prisma.ReviewWhereInput,
