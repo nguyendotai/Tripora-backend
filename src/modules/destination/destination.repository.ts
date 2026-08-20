@@ -6,6 +6,29 @@ import { PrismaService } from '../../database/prisma.service';
 export class DestinationRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** "Noi bat" = duoc luu (Wishlist) nhieu nhat — mirror
+   * ReportRepository.topDestinationsByWishlist nhung re-fetch du field cho card Frontend. */
+  async findPopular(limit: number): Promise<Destination[]> {
+    const grouped = await this.prisma.wishlistItem.groupBy({
+      by: ['destinationId'],
+      _count: { destinationId: true },
+      orderBy: { _count: { destinationId: 'desc' } },
+      take: limit,
+    });
+    if (grouped.length === 0) {
+      return [];
+    }
+
+    const items = await this.prisma.destination.findMany({
+      where: { id: { in: grouped.map((g) => g.destinationId) }, deletedAt: null },
+    });
+    const byId = new Map(items.map((item) => [item.id.toString(), item]));
+
+    return grouped
+      .map((g) => byId.get(g.destinationId.toString()))
+      .filter((item): item is (typeof items)[number] => !!item);
+  }
+
   async findMany(
     where: Prisma.DestinationWhereInput,
     skip: number,

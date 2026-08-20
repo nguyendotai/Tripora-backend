@@ -13,9 +13,11 @@ import { OrganizationMemberService } from '../provider/organization-member.servi
 import { PropertyRepository } from '../property/property.repository';
 import {
   buildPaginated,
+  clampLimit,
   resolvePagination,
 } from '../../shared/utils/pagination';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { ListReviewHighlightsDto } from './dto/list-review-highlights.dto';
 import { ListReviewsDto } from './dto/list-reviews.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { ReviewRepository } from './review.repository';
@@ -30,6 +32,12 @@ export class ReviewService {
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
   ) {}
+
+  /** Public — Home page "Danh gia tu khach hang". Khong phan trang, chi tra top N. */
+  listHighlights(query: ListReviewHighlightsDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    return this.reviewRepository.findHighlights(limit);
+  }
 
   async list(query: ListReviewsDto) {
     const { page, limit, skip, take } = resolvePagination(query);

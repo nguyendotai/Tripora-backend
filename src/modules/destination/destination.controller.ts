@@ -19,6 +19,7 @@ import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateDestinationDto } from './dto/create-destination.dto';
 import { ListDestinationsDto } from './dto/list-destinations.dto';
+import { ListPopularDestinationsDto } from './dto/list-popular-destinations.dto';
 import { UpdateDestinationDto } from './dto/update-destination.dto';
 import { DestinationService } from './destination.service';
 
@@ -30,6 +31,12 @@ export class DestinationController {
   @Get()
   list(@Query() query: ListDestinationsDto) {
     return this.destinationService.list(query);
+  }
+
+  // Home page — dat truoc ':slug' de khong bi nuot route.
+  @Get('popular')
+  listPopular(@Query() query: ListPopularDestinationsDto) {
+    return this.destinationService.listPopular(query);
   }
 
   @Get(':slug')

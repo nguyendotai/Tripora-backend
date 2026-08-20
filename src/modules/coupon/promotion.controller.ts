@@ -23,6 +23,7 @@ import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateMyPromotionDto } from './dto/create-my-promotion.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
+import { ListActivePromotionsDto } from './dto/list-active-promotions.dto';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { UpdateMyPromotionDto } from './dto/update-my-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
@@ -33,6 +34,12 @@ import { PromotionService } from './promotion.service';
 @Controller('promotions')
 export class PromotionController {
   constructor(private readonly promotionService: PromotionService) {}
+
+  // Home page — public, dat truoc ':id' de khong bi nuot route.
+  @Get('active')
+  listActive(@Query() query: ListActivePromotionsDto) {
+    return this.promotionService.listActive(query);
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)

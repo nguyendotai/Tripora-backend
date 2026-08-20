@@ -19,6 +19,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreatePropertyDto } from './dto/create-property.dto';
+import { ListPopularPropertiesDto } from './dto/list-popular-properties.dto';
 import { ListPropertiesDto } from './dto/list-properties.dto';
 import { ReviewPropertyDto } from './dto/review-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -32,6 +33,12 @@ export class PropertyController {
   @Get()
   list(@Query() query: ListPropertiesDto) {
     return this.propertyService.list(query);
+  }
+
+  // Home page — dat truoc ':slug' de khong bi nuot route.
+  @Get('popular')
+  listPopular(@Query() query: ListPopularPropertiesDto) {
+    return this.propertyService.listPopular(query);
   }
 
   @Get('mine')

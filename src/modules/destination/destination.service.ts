@@ -1,15 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import { buildPaginated, clampLimit, resolvePagination } from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreateDestinationDto } from './dto/create-destination.dto';
 import { ListDestinationsDto } from './dto/list-destinations.dto';
+import { ListPopularDestinationsDto } from './dto/list-popular-destinations.dto';
 import { UpdateDestinationDto } from './dto/update-destination.dto';
 import { DestinationRepository } from './destination.repository';
 
 @Injectable()
 export class DestinationService {
   constructor(private readonly destinationRepository: DestinationRepository) {}
+
+  /** Public — Home page "Diem den noi bat". Khong phan trang, chi tra top N. */
+  listPopular(query: ListPopularDestinationsDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    return this.destinationRepository.findPopular(limit);
+  }
 
   async list(query: ListDestinationsDto) {
     const { page, limit, skip, take } = resolvePagination(query);

@@ -11,11 +11,13 @@ import { OrganizationMemberService } from '../provider/organization-member.servi
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
+  clampLimit,
   resolvePagination,
 } from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreateExperienceDto } from './dto/create-experience.dto';
 import { ListExperiencesDto } from './dto/list-experiences.dto';
+import { ListPopularExperiencesDto } from './dto/list-popular-experiences.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { ExperienceRepository } from './experience.repository';
 
@@ -52,6 +54,12 @@ export class ExperienceService {
       orderBy,
     );
     return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** Public — Home page "Hoat dong noi bat". Khong phan trang, chi tra top N. */
+  async listPopular(query: ListPopularExperiencesDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    return this.experienceRepository.findPopular(limit);
   }
 
   async getBySlug(slug: string) {

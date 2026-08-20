@@ -23,6 +23,7 @@ import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateExperienceDto } from './dto/create-experience.dto';
 import { ListExperiencesDto } from './dto/list-experiences.dto';
+import { ListPopularExperiencesDto } from './dto/list-popular-experiences.dto';
 import { ReviewExperienceDto } from './dto/review-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { ExperienceService } from './experience.service';
@@ -35,6 +36,12 @@ export class ExperienceController {
   @Get()
   list(@Query() query: ListExperiencesDto) {
     return this.experienceService.list(query);
+  }
+
+  // Home page — dat truoc ':slug' de khong bi nuot route.
+  @Get('popular')
+  listPopular(@Query() query: ListPopularExperiencesDto) {
+    return this.experienceService.listPopular(query);
   }
 
   @Get('mine')

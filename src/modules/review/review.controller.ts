@@ -17,6 +17,7 @@ import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { ListReviewHighlightsDto } from './dto/list-review-highlights.dto';
 import { ListReviewsDto } from './dto/list-reviews.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { ReviewService } from './review.service';
@@ -25,6 +26,12 @@ import { ReviewService } from './review.service';
 @Controller('reviews')
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
+
+  // Home page — chua co ':id' o controller nay nen khong lo thu tu route.
+  @Get('highlights')
+  listHighlights(@Query() query: ListReviewHighlightsDto) {
+    return this.reviewService.listHighlights(query);
+  }
 
   @Get('mine')
   @ApiBearerAuth()

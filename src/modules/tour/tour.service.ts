@@ -11,10 +11,12 @@ import { OrganizationMemberService } from '../provider/organization-member.servi
 import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
+  clampLimit,
   resolvePagination,
 } from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreateTourDto } from './dto/create-tour.dto';
+import { ListPopularToursDto } from './dto/list-popular-tours.dto';
 import { ListToursDto } from './dto/list-tours.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { TourRepository } from './tour.repository';
@@ -52,6 +54,12 @@ export class TourService {
       orderBy,
     );
     return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** Public — Home page "Tour noi bat". Khong phan trang, chi tra top N. */
+  async listPopular(query: ListPopularToursDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    return this.tourRepository.findPopular(limit);
   }
 
   async getBySlug(slug: string) {

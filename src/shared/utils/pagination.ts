@@ -27,6 +27,16 @@ export function resolvePagination(query: PaginationQuery) {
   return { page, limit, skip: (page - 1) * limit, take: limit };
 }
 
+/** Cho cac endpoint "top N" khong phan trang (popular/highlights/active) — khac resolvePagination
+ * vi khong co khai niem page/skip, chi can 1 gioi han an toan. */
+export function clampLimit(
+  rawLimit: number | undefined,
+  defaultLimit: number,
+  maxLimit: number,
+): number {
+  return Math.min(Math.max(rawLimit ?? defaultLimit, 1), maxLimit);
+}
+
 export function buildPaginated<T>(
   items: T[],
   totalItems: number,
