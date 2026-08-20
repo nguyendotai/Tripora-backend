@@ -1080,6 +1080,23 @@
           }
         },
         {
+          "name": "List Comments (Moderation)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/comments/moderation?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "moderation"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V8 vong 4 - Admin]** ADMIN only (403 neu khong phai ADMIN). Toan bo comment moi Post, moi nhat truoc, kem post.caption de co ngu canh."
+          }
+        },
+        {
           "name": "Create Comment",
           "request": {
             "method": "POST",

@@ -17,10 +17,13 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ListCommentsDto } from './dto/list-comments.dto';
+import { ListCommentsModerationDto } from './dto/list-comments-moderation.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { CommentService } from './comment.service';
 
@@ -28,6 +31,14 @@ import { CommentService } from './comment.service';
 @Controller('comments')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
+
+  @Get('moderation')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  listForModeration(@Query() query: ListCommentsModerationDto) {
+    return this.commentService.listForModeration(query);
+  }
 
   @Get()
   list(@Query() query: ListCommentsDto) {

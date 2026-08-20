@@ -13,6 +13,7 @@ import {
 } from '../../shared/utils/pagination';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ListCommentsDto } from './dto/list-comments.dto';
+import { ListCommentsModerationDto } from './dto/list-comments-moderation.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { CommentRepository } from './comment.repository';
 
@@ -29,6 +30,16 @@ export class CommentService {
     const { page, limit, skip, take } = resolvePagination(query);
     const [items, totalItems] = await this.commentRepository.findManyByPost(
       postId,
+      skip,
+      take,
+    );
+    return buildPaginated(items, totalItems, page, limit);
+  }
+
+  /** ADMIN — toan bo comment moi Post, de kiem duyet (mirror AircraftService.listForModeration). */
+  async listForModeration(query: ListCommentsModerationDto) {
+    const { page, limit, skip, take } = resolvePagination(query);
+    const [items, totalItems] = await this.commentRepository.findManyForModeration(
       skip,
       take,
     );
