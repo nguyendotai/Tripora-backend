@@ -42,6 +42,8 @@ import { UserModule } from './modules/user/user.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { ReviewModule } from './modules/review/review.module';
 import { PostModule } from './modules/post/post.module';
+import { LikeModule } from './modules/like/like.module';
+import { SavedPostModule } from './modules/saved-post/saved-post.module';
 
 @Module({
   imports: [
@@ -88,6 +90,8 @@ import { PostModule } from './modules/post/post.module';
     CommissionModule,
     BookingExpirationModule,
     PostModule,
+    LikeModule,
+    SavedPostModule,
   ],
   controllers: [],
   providers: [],

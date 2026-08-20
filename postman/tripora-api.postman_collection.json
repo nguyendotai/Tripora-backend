@@ -890,6 +890,110 @@
       ]
     },
     {
+      "name": "Like",
+      "item": [
+        {
+          "name": "List My Likes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/likes/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["likes", "mine"]
+            },
+            "description": "**[V8 vong 2]** Danh sach postId minh da thich, khong phan trang."
+          }
+        },
+        {
+          "name": "Like Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/likes",
+              "host": ["{{baseUrl}}"],
+              "path": ["likes"]
+            },
+            "description": "Idempotent — goi nhieu lan khong tao ban ghi trung (unique userId+postId). 400 neu postId khong ton tai."
+          }
+        },
+        {
+          "name": "Unlike Post",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/likes/:postId",
+              "host": ["{{baseUrl}}"],
+              "path": ["likes", ":postId"],
+              "variable": [{ "key": "postId", "value": "1" }]
+            },
+            "description": "Idempotent — goi lai lan 2 van 204, khong loi."
+          }
+        }
+      ]
+    },
+    {
+      "name": "SavedPost",
+      "item": [
+        {
+          "name": "List My Saved Posts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/saved-posts/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["saved-posts", "mine"]
+            },
+            "description": "**[V8 vong 2]** Tra kem noi dung Post day du (cung include voi GET /posts) de hien thi lai danh sach da luu."
+          }
+        },
+        {
+          "name": "Save Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/saved-posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["saved-posts"]
+            },
+            "description": "Idempotent, 400 neu postId khong ton tai."
+          }
+        },
+        {
+          "name": "Unsave Post",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/saved-posts/:postId",
+              "host": ["{{baseUrl}}"],
+              "path": ["saved-posts", ":postId"],
+              "variable": [{ "key": "postId", "value": "1" }]
+            },
+            "description": "Idempotent — goi lai lan 2 van 204, khong loi."
+          }
+        }
+      ]
+    },
+    {
       "name": "Blog",
       "item": [
         {

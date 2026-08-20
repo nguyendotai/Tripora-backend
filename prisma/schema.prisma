@@ -48,6 +48,8 @@ model User {
   couponRedemptions  CouponRedemption[]
   refunds            Refund[]
   posts              Post[]
+  likes              Like[]
+  savedPosts         SavedPost[]
 
   @@map("users")
 }
@@ -1311,8 +1313,43 @@ model Post {
 
   user        User         @relation(fields: [userId], references: [id])
   destination Destination? @relation(fields: [destinationId], references: [id])
+  likes       Like[]
+  savedBy     SavedPost[]
 
   @@index([userId])
   @@index([destinationId])
   @@map("posts")
+}
+
+// V8 vong 2 — Like/Save deu la toggle idempotent theo cap (userId, postId), mirror chinh xac
+// WishlistItem (unique composite + findUnique de add khong tao trung, deleteMany de remove
+// khong loi neu goi 2 lan). Tach 2 model rieng (khong gop chung 1 bang "reaction") vi 2 y nghia
+// khac nhau: Like la tin hieu cong khai (hien so luot thich), Save la bookmark ca nhan (chi chu
+// so huu thay), giong tinh than Wishlist da co tu V1.
+model Like {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  postId    BigInt   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("likes")
+}
+
+model SavedPost {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  postId    BigInt   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("saved_posts")
 }
