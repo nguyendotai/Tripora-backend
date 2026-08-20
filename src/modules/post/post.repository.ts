@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { Post, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
-const POST_INCLUDE = {
+/** Export de SavedPostRepository dung lai dung 1 shape khi tra ve Post kem trong SavedPost.list. */
+export const POST_INCLUDE = {
   user: { select: { id: true, firstName: true, lastName: true, avatar: true } },
   destination: { select: { id: true, name: true, slug: true } },
+  _count: { select: { likes: true } },
 } satisfies Prisma.PostInclude;
 
 @Injectable()
