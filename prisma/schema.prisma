@@ -52,6 +52,7 @@ model User {
   savedPosts         SavedPost[]
   following          Follow[]            @relation("Follower")
   followers          Follow[]            @relation("Following")
+  comments           Comment[]
 
   @@map("users")
 }
@@ -1317,6 +1318,7 @@ model Post {
   destination Destination? @relation(fields: [destinationId], references: [id])
   likes       Like[]
   savedBy     SavedPost[]
+  comments    Comment[]
 
   @@index([userId])
   @@index([destinationId])
@@ -1371,4 +1373,23 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followingId])
   @@map("follows")
+}
+
+// V8 vong 4 — Comment la muc cuoi cung cua checklist "Like/Follow/Comment/Save", khac 3 muc kia vi
+// khong phai toggle idempotent ma la CRUD that (co content, sua/xoa duoc) — mirror Review (soft
+// delete dung chung cho chu comment tu xoa HOAC Admin kiem duyet, khong xoa cung).
+model Comment {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  postId    BigInt    @map("post_id")
+  content   String    @db.Text
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@index([postId])
+  @@map("comments")
 }

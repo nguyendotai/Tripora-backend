@@ -16,7 +16,7 @@ export const POST_INCLUDE = {
     },
   },
   destination: { select: { id: true, name: true, slug: true } },
-  _count: { select: { likes: true } },
+  _count: { select: { likes: true, comments: true } },
 } satisfies Prisma.PostInclude;
 
 @Injectable()
