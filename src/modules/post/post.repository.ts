@@ -2,9 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { Post, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
-/** Export de SavedPostRepository dung lai dung 1 shape khi tra ve Post kem trong SavedPost.list. */
+/** Export de SavedPostRepository dung lai dung 1 shape khi tra ve Post kem trong SavedPost.list.
+ * user._count.followers (V8 vong 3) de Frontend hien so nguoi theo doi tac gia ngay tren feed,
+ * khong can goi rieng GET /follows moi bai. */
 export const POST_INCLUDE = {
-  user: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+  user: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      avatar: true,
+      _count: { select: { followers: true } },
+    },
+  },
   destination: { select: { id: true, name: true, slug: true } },
   _count: { select: { likes: true } },
 } satisfies Prisma.PostInclude;
