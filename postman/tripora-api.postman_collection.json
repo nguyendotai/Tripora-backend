@@ -994,6 +994,71 @@
       ]
     },
     {
+      "name": "Follow",
+      "item": [
+        {
+          "name": "List Following (My)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/follows/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["follows", "mine"]
+            },
+            "description": "**[V8 vong 3]** Nhung User minh dang theo doi, kem thong tin co ban."
+          }
+        },
+        {
+          "name": "List Followers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/follows/followers",
+              "host": ["{{baseUrl}}"],
+              "path": ["follows", "followers"]
+            },
+            "description": "Nhung User dang theo doi minh."
+          }
+        },
+        {
+          "name": "Follow User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"followingId\": \"2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/follows",
+              "host": ["{{baseUrl}}"],
+              "path": ["follows"]
+            },
+            "description": "Idempotent. 400 neu followingId khong ton tai hoac trung chinh minh (khong tu theo doi ban than)."
+          }
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/follows/:followingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["follows", ":followingId"],
+              "variable": [{ "key": "followingId", "value": "2" }]
+            },
+            "description": "Idempotent — goi lai lan 2 van 204, khong loi."
+          }
+        }
+      ]
+    },
+    {
       "name": "Blog",
       "item": [
         {

@@ -50,6 +50,8 @@ model User {
   posts              Post[]
   likes              Like[]
   savedPosts         SavedPost[]
+  following          Follow[]            @relation("Follower")
+  followers          Follow[]            @relation("Following")
 
   @@map("users")
 }
@@ -1352,4 +1354,21 @@ model SavedPost {
   @@unique([userId, postId])
   @@index([postId])
   @@map("saved_posts")
+}
+
+// V8 vong 3 — Follow (user-to-user), cung khuon toggle idempotent nhu Like/SavedPost nhung tham
+// chieu 2 lan len User (tu quan he) nen can 2 relation name rieng. followerId = nguoi bam theo doi,
+// followingId = nguoi duoc theo doi. Chan tu theo doi chinh minh o Service (khong phai DB constraint).
+model Follow {
+  id          BigInt   @id @default(autoincrement())
+  followerId  BigInt   @map("follower_id")
+  followingId BigInt   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@map("follows")
 }
