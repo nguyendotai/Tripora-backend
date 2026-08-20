@@ -1059,6 +1059,101 @@
       ]
     },
     {
+      "name": "Comment",
+      "item": [
+        {
+          "name": "List Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comments?postId=1&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"],
+              "query": [
+                { "key": "postId", "value": "1" },
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V8 vong 4]** Cong khai. Binh luan cua 1 Post, cu nhat truoc. postId bat buoc (400 neu thieu)."
+          }
+        },
+        {
+          "name": "List Comments (Moderation)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/comments/moderation?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "moderation"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true },
+                { "key": "limit", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "**[V8 vong 4 - Admin]** ADMIN only (403 neu khong phai ADMIN). Toan bo comment moi Post, moi nhat truoc, kem post.caption de co ngu canh."
+          }
+        },
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": \"1\",\n  \"content\": \"Bai viet hay qua!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"]
+            },
+            "description": "400 neu postId khong ton tai (hoac da bi an/xoa)."
+          }
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Cap nhat lai noi dung.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chi chu comment moi duoc sua. 403 neu khong phai chu so huu."
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/comments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Chu comment tu xoa, hoac ADMIN kiem duyet — ca 2 deu soft delete (mirror DELETE /reviews/:id). ADMIN go comment nguoi khac se gui kem Notification."
+          }
+        }
+      ]
+    },
+    {
       "name": "Blog",
       "item": [
         {

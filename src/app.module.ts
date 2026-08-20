@@ -45,6 +45,7 @@ import { PostModule } from './modules/post/post.module';
 import { LikeModule } from './modules/like/like.module';
 import { SavedPostModule } from './modules/saved-post/saved-post.module';
 import { FollowModule } from './modules/follow/follow.module';
+import { CommentModule } from './modules/comment/comment.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { FollowModule } from './modules/follow/follow.module';
     LikeModule,
     SavedPostModule,
     FollowModule,
+    CommentModule,
   ],
   controllers: [],
   providers: [],
