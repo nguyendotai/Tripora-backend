@@ -18,6 +18,13 @@ export class DestinationService {
     return this.destinationRepository.findPopular(limit);
   }
 
+  /** V8 — Home page "Goi y cho ban". Ca nhan hoa theo hanh vi (Wishlist/Booking/Review), khong
+   * phan trang, chi tra top N. */
+  getRecommended(userId: bigint, query: ListPopularDestinationsDto) {
+    const limit = clampLimit(query.limit, 6, 12);
+    return this.destinationRepository.findRecommended(userId, limit);
+  }
+
   async list(query: ListDestinationsDto) {
     const { page, limit, skip, take } = resolvePagination(query);
 

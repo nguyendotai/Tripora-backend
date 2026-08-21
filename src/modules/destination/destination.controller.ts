@@ -13,6 +13,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
@@ -37,6 +41,16 @@ export class DestinationController {
   @Get('popular')
   listPopular(@Query() query: ListPopularDestinationsDto) {
     return this.destinationService.listPopular(query);
+  }
+
+  // V8 — Home page "Goi y cho ban", can biet dang la ai nen bat buoc dang nhap.
+  @Get('recommended')
+  @UseGuards(JwtAuthGuard)
+  getRecommended(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListPopularDestinationsDto,
+  ) {
+    return this.destinationService.getRecommended(BigInt(user.id), query);
   }
 
   @Get(':slug')
