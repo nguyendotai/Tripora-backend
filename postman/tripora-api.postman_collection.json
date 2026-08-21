@@ -234,6 +234,20 @@
           }
         },
         {
+          "name": "List Recommended Destinations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/destinations/recommended?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["destinations", "recommended"],
+              "query": [{ "key": "limit", "value": "6" }]
+            },
+            "description": "**[V8 - Home page \"Goi y cho ban\"]** Yeu cau dang nhap. Ca nhan hoa theo Wishlist/Booking/Review cua user, khong phan trang. Chua tuong tac gi thi fallback ve popular."
+          }
+        },
+        {
           "name": "Get Destination by Slug",
           "request": {
             "method": "GET",
