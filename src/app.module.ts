@@ -1,7 +1,9 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module';
+import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { BookingModule } from './modules/booking/booking.module';
@@ -53,6 +55,22 @@ import { AnalyticsEventModule } from './modules/analytics-event/analytics-event.
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
+    RedisModule,
+    // V9 vong 5 — connection dung host/port (khong dung 1 instance Redis song song) de moi
+    // Queue/Worker BullMQ tu tao connection rieng, dung khuyen nghi cua BullMQ (tranh xung dot
+    // lenh blocking noi bo giua nhieu queue dung chung 1 connection).
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const url = new URL(config.get<string>('REDIS_URL') ?? 'redis://localhost:6379');
+        return {
+          connection: {
+            host: url.hostname,
+            port: Number(url.port) || 6379,
+          },
+        };
+      },
+    }),
     DatabaseModule,
     AuthModule,
     UserModule,

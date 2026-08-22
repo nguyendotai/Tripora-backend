@@ -9,6 +9,7 @@ import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
+import { CacheService } from '../../redis/cache.service';
 import {
   buildPaginated,
   clampLimit,
@@ -21,6 +22,8 @@ import { ListPropertiesDto } from './dto/list-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyRepository } from './property.repository';
 
+const POPULAR_CACHE_TTL_SECONDS = 300;
+
 @Injectable()
 export class PropertyService {
   constructor(
@@ -29,6 +32,7 @@ export class PropertyService {
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
+    private readonly cacheService: CacheService,
   ) {}
 
   /** Public — chỉ Property đã APPROVED, kèm fromPrice (giá thấp nhất trong các Room ACTIVE). */
@@ -64,17 +68,26 @@ export class PropertyService {
     return buildPaginated(itemsWithPrice, totalItems, page, limit);
   }
 
-  /** Public — Home page "Khach san noi bat". Khong phan trang, chi tra top N. */
+  /** Public — Home page "Khach san noi bat". Khong phan trang, chi tra top N. V9 vong 5 —
+   * cache-aside 5 phut, khong invalidate chu dong. */
   async listPopular(query: ListPopularPropertiesDto) {
     const limit = clampLimit(query.limit, 6, 12);
+    const cacheKey = `popular:properties:${limit}`;
+
+    const cached = await this.cacheService.get<unknown>(cacheKey);
+    if (cached) return cached;
+
     const items = await this.propertyRepository.findPopular(limit);
     const minPrices = await this.propertyRepository.findMinPricesByPropertyIds(
       items.map((item) => item.id),
     );
-    return items.map((item) => ({
+    const result = items.map((item) => ({
       ...item,
       fromPrice: minPrices.get(item.id)?.toString() ?? null,
     }));
+
+    await this.cacheService.set(cacheKey, result, POPULAR_CACHE_TTL_SECONDS);
+    return result;
   }
 
   async getBySlug(slug: string) {

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { CacheService } from '../../redis/cache.service';
 import { buildPaginated, clampLimit, resolvePagination } from '../../shared/utils/pagination';
 import { slugify } from '../../shared/utils/slugify';
 import { CreateDestinationDto } from './dto/create-destination.dto';
@@ -8,14 +9,27 @@ import { ListPopularDestinationsDto } from './dto/list-popular-destinations.dto'
 import { UpdateDestinationDto } from './dto/update-destination.dto';
 import { DestinationRepository } from './destination.repository';
 
+const POPULAR_CACHE_TTL_SECONDS = 300;
+
 @Injectable()
 export class DestinationService {
-  constructor(private readonly destinationRepository: DestinationRepository) {}
+  constructor(
+    private readonly destinationRepository: DestinationRepository,
+    private readonly cacheService: CacheService,
+  ) {}
 
-  /** Public — Home page "Diem den noi bat". Khong phan trang, chi tra top N. */
-  listPopular(query: ListPopularDestinationsDto) {
+  /** Public — Home page "Diem den noi bat". Khong phan trang, chi tra top N. V9 vong 5 — cache-
+   * aside 5 phut, khong invalidate chu dong (ranking khong can tuc thoi, chap nhan do tre). */
+  async listPopular(query: ListPopularDestinationsDto) {
     const limit = clampLimit(query.limit, 6, 12);
-    return this.destinationRepository.findPopular(limit);
+    const cacheKey = `popular:destinations:${limit}`;
+
+    const cached = await this.cacheService.get<unknown>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.destinationRepository.findPopular(limit);
+    await this.cacheService.set(cacheKey, result, POPULAR_CACHE_TTL_SECONDS);
+    return result;
   }
 
   /** V8 — Home page "Goi y cho ban". Ca nhan hoa theo hanh vi (Wishlist/Booking/Review), khong
