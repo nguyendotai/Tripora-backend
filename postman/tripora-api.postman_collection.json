@@ -1345,6 +1345,118 @@
       ]
     },
     {
+      "name": "Conversation",
+      "item": [
+        {
+          "name": "Start Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"1\",\n  \"message\": \"Xin chao, phong con trong khong?\"\n}"
+            },
+            "description": "Yeu cau dang nhap (Traveler). Tim-hoac-tao Conversation (1 conversation/cap userId+providerId), tao Message dau tien, notify org member Provider co quyen booking:view. 404 neu Provider khong ton tai/chua APPROVED."
+          }
+        },
+        {
+          "name": "List My Conversations (Traveler)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", "mine"]
+            },
+            "description": "Yeu cau dang nhap. Danh sach Conversation cua Traveler, kem provider{id,name}, lastMessage, unreadCount."
+          }
+        },
+        {
+          "name": "List My Conversations (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/mine/provider",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", "mine", "provider"]
+            },
+            "description": "Yeu cau quyen booking:view (Owner/Manager/Booking Staff). Danh sach Conversation cua Provider dang dang nhap, kem user{id,firstName,lastName,avatar}, lastMessage, unreadCount."
+          }
+        },
+        {
+          "name": "List Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/:id/messages?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", ":id", "messages"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Yeu cau la 1 trong 2 phia cua Conversation (Traveler so huu, hoac org member booking:view dung Provider) — 403 neu khong."
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/:id/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", ":id", "messages"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Chao ban, con phong Deluxe nhe!\"\n}"
+            },
+            "description": "Cung guard voi List Messages. Notify phia con lai (Tin nhan moi / Tin nhan moi tu doi tac)."
+          }
+        },
+        {
+          "name": "Mark Conversation As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/:id/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", ":id", "read"],
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Cung guard voi List Messages. Danh dau da doc tin nhan cua phia con lai. 204 No Content."
+          }
+        }
+      ]
+    },
+    {
       "name": "Report",
       "item": [
         {
