@@ -97,7 +97,17 @@ export class TourController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewTourDto) {
-    return this.tourService.review(parseIdParam(id), dto.status, dto.reason);
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewTourDto,
+  ) {
+    return this.tourService.review(
+      BigInt(user.id),
+      user.role,
+      parseIdParam(id),
+      dto.status,
+      dto.reason,
+    );
   }
 }

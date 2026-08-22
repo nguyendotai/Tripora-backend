@@ -55,7 +55,14 @@ export class CommissionController {
   @Patch(':id/payout')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  markPaidOut(@Param('id') id: string) {
-    return this.commissionService.markPaidOut(parseIdParam(id));
+  markPaidOut(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.commissionService.markPaidOut(
+      BigInt(user.id),
+      user.role,
+      parseIdParam(id),
+    );
   }
 }

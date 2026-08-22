@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ActivityLogModule } from '../activity-log/activity-log.module';
 import { BookingModule } from '../booking/booking.module';
 import { DestinationModule } from '../destination/destination.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -20,6 +21,7 @@ import { ReviewService } from './review.service';
     PropertyModule,
     BookingModule,
     ProviderModule,
+    ActivityLogModule,
   ],
   controllers: [ReviewController],
   providers: [ReviewRepository, ReviewService],

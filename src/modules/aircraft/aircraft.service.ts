@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ProviderType } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -24,6 +25,7 @@ export class AircraftService {
     private readonly providerRepository: ProviderRepository,
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Airline Provider xem toàn bộ Aircraft của chính mình, bất kể status. */
@@ -105,7 +107,13 @@ export class AircraftService {
     await this.aircraftRepository.softDelete(aircraft.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const aircraft = await this.aircraftRepository.findById(id);
     if (!aircraft) {
       throw new NotFoundException('Aircraft not found');
@@ -129,6 +137,16 @@ export class AircraftService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'aircraft.review',
+      entityType: 'aircraft',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }

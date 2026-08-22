@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PostRepository } from '../post/post.repository';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import {
   buildPaginated,
@@ -23,6 +24,7 @@ export class CommentService {
     private readonly commentRepository: CommentRepository,
     private readonly postRepository: PostRepository,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async list(query: ListCommentsDto) {
@@ -39,10 +41,8 @@ export class CommentService {
   /** ADMIN — toan bo comment moi Post, de kiem duyet (mirror AircraftService.listForModeration). */
   async listForModeration(query: ListCommentsModerationDto) {
     const { page, limit, skip, take } = resolvePagination(query);
-    const [items, totalItems] = await this.commentRepository.findManyForModeration(
-      skip,
-      take,
-    );
+    const [items, totalItems] =
+      await this.commentRepository.findManyForModeration(skip, take);
     return buildPaginated(items, totalItems, page, limit);
   }
 
@@ -85,6 +85,15 @@ export class CommentService {
         'Bình luận của bạn đã bị gỡ',
         'Một bình luận bạn viết đã bị quản trị viên gỡ bỏ do vi phạm quy định cộng đồng.',
       );
+
+      await this.activityLogService.log({
+        actorId: userId,
+        actorRole: role,
+        action: 'comment.moderationDelete',
+        entityType: 'comment',
+        entityId: comment.id,
+        metadata: { ownerId: comment.userId.toString() },
+      });
     }
   }
 

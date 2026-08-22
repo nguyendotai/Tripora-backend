@@ -50,6 +50,7 @@ import { FollowModule } from './modules/follow/follow.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { AnalyticsEventModule } from './modules/analytics-event/analytics-event.module';
+import { ActivityLogModule } from './modules/activity-log/activity-log.module';
 
 @Module({
   imports: [
@@ -62,7 +63,9 @@ import { AnalyticsEventModule } from './modules/analytics-event/analytics-event.
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const url = new URL(config.get<string>('REDIS_URL') ?? 'redis://localhost:6379');
+        const url = new URL(
+          config.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+        );
         return {
           connection: {
             host: url.hostname,
@@ -118,6 +121,7 @@ import { AnalyticsEventModule } from './modules/analytics-event/analytics-event.
     CommentModule,
     ConversationModule,
     AnalyticsEventModule,
+    ActivityLogModule,
   ],
   controllers: [],
   providers: [],

@@ -75,8 +75,14 @@ export class AircraftController {
   @Patch(':id/review')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewAircraftDto) {
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewAircraftDto,
+  ) {
     return this.aircraftService.review(
+      BigInt(user.id),
+      user.role,
       parseIdParam(id),
       dto.status,
       dto.reason,

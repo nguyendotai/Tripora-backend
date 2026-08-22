@@ -1,7 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, UserStatus } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
-import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
+import {
+  buildPaginated,
+  resolvePagination,
+} from '../../shared/utils/pagination';
 import { UserRepository } from './user.repository';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ListUsersDto } from './dto/list-users.dto';
@@ -18,6 +26,7 @@ export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async getById(id: bigint) {
@@ -46,11 +55,20 @@ export class UserService {
       }),
     };
 
-    const [items, totalItems] = await this.userRepository.findMany(where, skip, take);
+    const [items, totalItems] = await this.userRepository.findMany(
+      where,
+      skip,
+      take,
+    );
     return buildPaginated(items.map(sanitizeUser), totalItems, page, limit);
   }
 
-  async updateStatus(targetId: bigint, currentUserId: bigint, status: UserStatus) {
+  async updateStatus(
+    targetId: bigint,
+    currentUserId: bigint,
+    currentUserRole: string,
+    status: UserStatus,
+  ) {
     if (targetId === currentUserId) {
       throw new BadRequestException('You cannot change your own status');
     }
@@ -62,6 +80,15 @@ export class UserService {
       'Trạng thái tài khoản đã thay đổi',
       `Tài khoản của bạn hiện đang ${STATUS_LABELS[status]}.`,
     );
+
+    await this.activityLogService.log({
+      actorId: currentUserId,
+      actorRole: currentUserRole,
+      action: 'user.updateStatus',
+      entityType: 'user',
+      entityId: targetId,
+      metadata: { status },
+    });
 
     return user;
   }

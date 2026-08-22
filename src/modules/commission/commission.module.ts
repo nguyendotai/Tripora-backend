@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ActivityLogModule } from '../activity-log/activity-log.module';
 import { ProviderModule } from '../provider/provider.module';
 import { CommissionController } from './commission.controller';
 import { CommissionRepository } from './commission.repository';
@@ -10,7 +11,7 @@ import { CommissionService } from './commission.service';
  * V7 vong 4: them ProviderModule de dung OrganizationMemberService cho GET /commissions/mine —
  * an toan, ProviderModule khong import nguoc lai CommissionModule/PaymentModule. */
 @Module({
-  imports: [ProviderModule],
+  imports: [ProviderModule, ActivityLogModule],
   controllers: [CommissionController],
   providers: [CommissionService, CommissionRepository],
   exports: [CommissionService],

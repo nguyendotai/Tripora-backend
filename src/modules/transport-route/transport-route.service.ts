@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ProviderType, TransportRouteStatus } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -23,6 +24,7 @@ export class TransportRouteService {
     private readonly providerRepository: ProviderRepository,
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — chỉ Route đã APPROVED. Khách tìm theo origin/destination trước khi chọn Vehicle. */
@@ -122,7 +124,13 @@ export class TransportRouteService {
     await this.transportRouteRepository.softDelete(route.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const route = await this.transportRouteRepository.findById(id);
     if (!route) {
       throw new NotFoundException('Transport route not found');
@@ -149,6 +157,16 @@ export class TransportRouteService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'transportRoute.review',
+      entityType: 'transportRoute',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }

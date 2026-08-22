@@ -13,7 +13,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
@@ -44,7 +47,10 @@ export class PropertyController {
   @Get('mine')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ListPropertiesDto) {
+  listMine(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListPropertiesDto,
+  ) {
     return this.propertyService.listMine(BigInt(user.id), query);
   }
 
@@ -64,7 +70,10 @@ export class PropertyController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreatePropertyDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreatePropertyDto,
+  ) {
     return this.propertyService.create(BigInt(user.id), dto);
   }
 
@@ -91,7 +100,17 @@ export class PropertyController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewPropertyDto) {
-    return this.propertyService.review(parseIdParam(id), dto.status, dto.reason);
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewPropertyDto,
+  ) {
+    return this.propertyService.review(
+      BigInt(user.id),
+      user.role,
+      parseIdParam(id),
+      dto.status,
+      dto.reason,
+    );
   }
 }

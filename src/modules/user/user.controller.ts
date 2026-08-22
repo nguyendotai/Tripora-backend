@@ -1,7 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { parseIdParam } from '../../shared/utils/parse-id';
@@ -30,7 +41,10 @@ export class UserController {
     @CurrentUser() currentUser: CurrentUserPayload,
     @Body() dto: UpdateProfileDto,
   ) {
-    const user = await this.userService.updateProfile(BigInt(currentUser.id), dto);
+    const user = await this.userService.updateProfile(
+      BigInt(currentUser.id),
+      dto,
+    );
     return sanitizeUser(user);
   }
 
@@ -52,6 +66,7 @@ export class UserController {
     const user = await this.userService.updateStatus(
       parseIdParam(id),
       BigInt(currentUser.id),
+      currentUser.role,
       dto.status,
     );
     return sanitizeUser(user);

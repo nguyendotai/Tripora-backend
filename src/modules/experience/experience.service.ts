@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ExperienceStatus, Prisma, ProviderType } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -33,6 +34,7 @@ export class ExperienceService {
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
     private readonly cacheService: CacheService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — chỉ Experience đã APPROVED. */
@@ -194,7 +196,13 @@ export class ExperienceService {
     await this.experienceRepository.softDelete(experience.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const experience = await this.experienceRepository.findById(id);
     if (!experience) {
       throw new NotFoundException('Experience not found');
@@ -220,6 +228,16 @@ export class ExperienceService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'experience.review',
+      entityType: 'experience',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }

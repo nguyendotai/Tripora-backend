@@ -97,8 +97,14 @@ export class TransportRouteController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewTransportRouteDto) {
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewTransportRouteDto,
+  ) {
     return this.transportRouteService.review(
+      BigInt(user.id),
+      user.role,
       parseIdParam(id),
       dto.status,
       dto.reason,

@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BookingDomain, Prisma } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
 import {
@@ -26,6 +27,7 @@ export class CommissionService {
     private readonly commissionRepository: CommissionRepository,
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly providerRepository: ProviderRepository,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -159,11 +161,24 @@ export class CommissionService {
 
   /** Admin danh dau 1 Commission da tra cho Provider (chuyen khoan ngoai he thong) — toi gian,
    * tung dong 1, khong batch/khong tich hop API chuyen tien that. */
-  async markPaidOut(id: bigint) {
+  async markPaidOut(actorId: bigint, actorRole: string, id: bigint) {
     const commission = await this.commissionRepository.findById(id);
     if (!commission) {
       throw new NotFoundException('Commission not found');
     }
-    return this.commissionRepository.updatePayoutStatus(id, 'PAID');
+    const updated = await this.commissionRepository.updatePayoutStatus(
+      id,
+      'PAID',
+    );
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'commission.markPaidOut',
+      entityType: 'commission',
+      entityId: id,
+    });
+
+    return updated;
   }
 }

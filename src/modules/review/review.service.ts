@@ -8,6 +8,7 @@ import {
 import { Prisma, ProviderType, Role } from '@prisma/client';
 import { BookingRepository } from '../booking/booking.repository';
 import { DestinationRepository } from '../destination/destination.repository';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { PropertyRepository } from '../property/property.repository';
@@ -31,6 +32,7 @@ export class ReviewService {
     private readonly bookingRepository: BookingRepository,
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — Home page "Danh gia tu khach hang". Khong phan trang, chi tra top N. */
@@ -207,6 +209,15 @@ export class ReviewService {
         'Đánh giá của bạn đã bị gỡ',
         'Một đánh giá bạn viết đã bị quản trị viên gỡ bỏ do vi phạm quy định cộng đồng.',
       );
+
+      await this.activityLogService.log({
+        actorId: userId,
+        actorRole: role,
+        action: 'review.moderationDelete',
+        entityType: 'review',
+        entityId: review.id,
+        metadata: { ownerId: review.userId.toString() },
+      });
     }
   }
 
