@@ -1,14 +1,16 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Queue } from 'bullmq';
 import { buildPaginated, resolvePagination } from '../../shared/utils/pagination';
-import { RealtimeService } from '../realtime/realtime.service';
 import { ListNotificationsDto } from './dto/list-notifications.dto';
 import { NotificationRepository } from './notification.repository';
+import type { NotifyJobData } from './notification.processor';
 
 @Injectable()
 export class NotificationService {
   constructor(
     private readonly notificationRepository: NotificationRepository,
-    private readonly realtimeService: RealtimeService,
+    @InjectQueue('notification') private readonly notificationQueue: Queue<NotifyJobData>,
   ) {}
 
   async list(userId: bigint, query: ListNotificationsDto) {
@@ -35,10 +37,16 @@ export class NotificationService {
 
   /** Internal helper for other modules to notify a user — not exposed via HTTP. V9 vong 1: gui
    * kem qua Socket.IO (phong "user:<id>") — day la diem chot duy nhat can sua de toan bo noi
-   * dang goi notify() (16 module) tu dong thanh realtime, khong dung truc tiep tung noi goi. */
+   * dang goi notify() (19 module) tu dong thanh realtime, khong dung truc tiep tung noi goi.
+   * V9 vong 5: chuyen sang enqueue BullMQ (khong ghi DB/emit truc tiep nua) — NotificationProcessor
+   * moi lam viec that. Khong doi signature/hanh vi voi 19 call site (khong noi nao dung gia tri
+   * tra ve, da grep xac nhan truoc khi doi). userId (bigint) phai serialize thanh string vi BullMQ
+   * luu job data qua JSON. */
   async notify(userId: bigint, title: string, message: string) {
-    const notification = await this.notificationRepository.create({ userId, title, message });
-    this.realtimeService.emitToUser(userId, 'notification:new', notification);
-    return notification;
+    await this.notificationQueue.add(
+      'notify',
+      { userId: userId.toString(), title, message },
+      { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+    );
   }
 }

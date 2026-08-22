@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { BookingDomain } from '@prisma/client';
 import { BookingRepository } from '../booking/booking.repository';
@@ -34,7 +33,8 @@ export class BookingExpirationService {
     private readonly flightBookingRepository: FlightBookingRepository,
   ) {}
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  /** V9 vong 5 — trigger boi BookingExpirationProcessor (BullMQ repeatable job moi 5 phut) thay
+   * vi @Cron truoc day — than ham giu nguyen 100%, chi doi co che goi. */
   async expirePendingBookings(): Promise<void> {
     const minutes =
       this.config.get<number>('BOOKING_PAYMENT_EXPIRY_MINUTES') ??

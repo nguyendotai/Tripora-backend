@@ -9,6 +9,7 @@ import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
+import { CacheService } from '../../redis/cache.service';
 import {
   buildPaginated,
   clampLimit,
@@ -21,6 +22,8 @@ import { ListPopularExperiencesDto } from './dto/list-popular-experiences.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { ExperienceRepository } from './experience.repository';
 
+const POPULAR_CACHE_TTL_SECONDS = 300;
+
 @Injectable()
 export class ExperienceService {
   constructor(
@@ -29,6 +32,7 @@ export class ExperienceService {
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
+    private readonly cacheService: CacheService,
   ) {}
 
   /** Public — chỉ Experience đã APPROVED. */
@@ -56,10 +60,18 @@ export class ExperienceService {
     return buildPaginated(items, totalItems, page, limit);
   }
 
-  /** Public — Home page "Hoat dong noi bat". Khong phan trang, chi tra top N. */
+  /** Public — Home page "Hoat dong noi bat". Khong phan trang, chi tra top N. V9 vong 5 —
+   * cache-aside 5 phut, khong invalidate chu dong. */
   async listPopular(query: ListPopularExperiencesDto) {
     const limit = clampLimit(query.limit, 6, 12);
-    return this.experienceRepository.findPopular(limit);
+    const cacheKey = `popular:experiences:${limit}`;
+
+    const cached = await this.cacheService.get<unknown>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.experienceRepository.findPopular(limit);
+    await this.cacheService.set(cacheKey, result, POPULAR_CACHE_TTL_SECONDS);
+    return result;
   }
 
   async getBySlug(slug: string) {
