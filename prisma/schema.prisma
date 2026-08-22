@@ -309,6 +309,29 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
+// V9 vong 7 — Report generation (job nen). Report = snapshot JSON cua ReportService.analytics()
+// tai thoi diem tao (khong phai file CSV/PDF, tranh them dependency moi cho 1 lat cat). Khong co
+// field "type" — hien chi co 1 loai report, them cho use-case chua xuat hien lan 2 la over-engineer.
+model Report {
+  id           BigInt       @id @default(autoincrement())
+  status       ReportStatus @default(PENDING)
+  data         Json?
+  errorMessage String?      @map("error_message") @db.Text
+  requestedBy  BigInt       @map("requested_by")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  completedAt  DateTime?    @map("completed_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+enum ReportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 enum ProviderType {
   HOTEL
   TOUR

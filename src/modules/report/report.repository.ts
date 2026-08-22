@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma, ProviderStatus, Role, UserStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  Prisma,
+  ProviderStatus,
+  ReportStatus,
+  Role,
+  UserStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
-const BOOKED_STATUSES: BookingStatus[] = [BookingStatus.CONFIRMED, BookingStatus.COMPLETED];
+const BOOKED_STATUSES: BookingStatus[] = [
+  BookingStatus.CONFIRMED,
+  BookingStatus.COMPLETED,
+];
 
 @Injectable()
 export class ReportRepository {
@@ -11,9 +21,15 @@ export class ReportRepository {
   async countUsers() {
     const [total, active, inactive, banned, admins] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null } }),
-      this.prisma.user.count({ where: { deletedAt: null, status: UserStatus.ACTIVE } }),
-      this.prisma.user.count({ where: { deletedAt: null, status: UserStatus.INACTIVE } }),
-      this.prisma.user.count({ where: { deletedAt: null, status: UserStatus.BANNED } }),
+      this.prisma.user.count({
+        where: { deletedAt: null, status: UserStatus.ACTIVE },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, status: UserStatus.INACTIVE },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, status: UserStatus.BANNED },
+      }),
       this.prisma.user.count({ where: { deletedAt: null, role: Role.ADMIN } }),
     ]);
     return { total, active, inactive, banned, admins };
@@ -98,15 +114,31 @@ export class ReportRepository {
 
   async countBookingsByDomain() {
     const [hotel, tour, experience, transport, flight] = await Promise.all([
-      this.prisma.hotelBooking.count({ where: { status: { in: BOOKED_STATUSES } } }),
-      this.prisma.tourBooking.count({ where: { status: { in: BOOKED_STATUSES } } }),
-      this.prisma.experienceBooking.count({ where: { status: { in: BOOKED_STATUSES } } }),
-      this.prisma.transportBooking.count({ where: { status: { in: BOOKED_STATUSES } } }),
-      this.prisma.flightBooking.count({ where: { status: { in: BOOKED_STATUSES } } }),
+      this.prisma.hotelBooking.count({
+        where: { status: { in: BOOKED_STATUSES } },
+      }),
+      this.prisma.tourBooking.count({
+        where: { status: { in: BOOKED_STATUSES } },
+      }),
+      this.prisma.experienceBooking.count({
+        where: { status: { in: BOOKED_STATUSES } },
+      }),
+      this.prisma.transportBooking.count({
+        where: { status: { in: BOOKED_STATUSES } },
+      }),
+      this.prisma.flightBooking.count({
+        where: { status: { in: BOOKED_STATUSES } },
+      }),
     ]);
     return {
       total: hotel + tour + experience + transport + flight,
-      byDomain: { HOTEL: hotel, TOUR: tour, EXPERIENCE: experience, TRANSPORT: transport, FLIGHT: flight },
+      byDomain: {
+        HOTEL: hotel,
+        TOUR: tour,
+        EXPERIENCE: experience,
+        TRANSPORT: transport,
+        FLIGHT: flight,
+      },
     };
   }
 
@@ -114,9 +146,15 @@ export class ReportRepository {
     const [total, pending, approved, rejected, suspended] = await Promise.all([
       this.prisma.provider.count(),
       this.prisma.provider.count({ where: { status: ProviderStatus.PENDING } }),
-      this.prisma.provider.count({ where: { status: ProviderStatus.APPROVED } }),
-      this.prisma.provider.count({ where: { status: ProviderStatus.REJECTED } }),
-      this.prisma.provider.count({ where: { status: ProviderStatus.SUSPENDED } }),
+      this.prisma.provider.count({
+        where: { status: ProviderStatus.APPROVED },
+      }),
+      this.prisma.provider.count({
+        where: { status: ProviderStatus.REJECTED },
+      }),
+      this.prisma.provider.count({
+        where: { status: ProviderStatus.SUSPENDED },
+      }),
     ]);
     return { total, pending, approved, rejected, suspended };
   }
@@ -124,52 +162,114 @@ export class ReportRepository {
   /** Conversion 30 ngay = |giao(user da VIEW, user da co Booking)| / |user da VIEW| * 100 — chi
    * tinh user da dang nhap (khong co he thong visitor id cho khach an danh, xem ghi chu vong 4). */
   async getConversion30d(since: Date) {
-    const [viewedRows, hotelUsers, tourUsers, experienceUsers, transportUsers, flightUsers] =
-      await Promise.all([
-        this.prisma.analyticsEvent.findMany({
-          where: { type: 'VIEW', userId: { not: null }, createdAt: { gte: since } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.hotelBooking.findMany({
-          where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.tourBooking.findMany({
-          where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.experienceBooking.findMany({
-          where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.transportBooking.findMany({
-          where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-        this.prisma.flightBooking.findMany({
-          where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
-          distinct: ['userId'],
-          select: { userId: true },
-        }),
-      ]);
+    const [
+      viewedRows,
+      hotelUsers,
+      tourUsers,
+      experienceUsers,
+      transportUsers,
+      flightUsers,
+    ] = await Promise.all([
+      this.prisma.analyticsEvent.findMany({
+        where: {
+          type: 'VIEW',
+          userId: { not: null },
+          createdAt: { gte: since },
+        },
+        distinct: ['userId'],
+        select: { userId: true },
+      }),
+      this.prisma.hotelBooking.findMany({
+        where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
+        distinct: ['userId'],
+        select: { userId: true },
+      }),
+      this.prisma.tourBooking.findMany({
+        where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
+        distinct: ['userId'],
+        select: { userId: true },
+      }),
+      this.prisma.experienceBooking.findMany({
+        where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
+        distinct: ['userId'],
+        select: { userId: true },
+      }),
+      this.prisma.transportBooking.findMany({
+        where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
+        distinct: ['userId'],
+        select: { userId: true },
+      }),
+      this.prisma.flightBooking.findMany({
+        where: { status: { in: BOOKED_STATUSES }, createdAt: { gte: since } },
+        distinct: ['userId'],
+        select: { userId: true },
+      }),
+    ]);
 
-    const viewedUserIds = new Set(viewedRows.map((row) => row.userId!.toString()));
-    const bookedUserIds = new Set(
-      [...hotelUsers, ...tourUsers, ...experienceUsers, ...transportUsers, ...flightUsers].map(
-        (row) => row.userId.toString(),
-      ),
+    const viewedUserIds = new Set(
+      viewedRows.map((row) => row.userId!.toString()),
     );
-    const convertedUserIds = [...viewedUserIds].filter((id) => bookedUserIds.has(id));
+    const bookedUserIds = new Set(
+      [
+        ...hotelUsers,
+        ...tourUsers,
+        ...experienceUsers,
+        ...transportUsers,
+        ...flightUsers,
+      ].map((row) => row.userId.toString()),
+    );
+    const convertedUserIds = [...viewedUserIds].filter((id) =>
+      bookedUserIds.has(id),
+    );
 
     return {
       viewedUsers: viewedUserIds.size,
       convertedUsers: convertedUserIds.length,
-      rate: viewedUserIds.size === 0 ? 0 : (convertedUserIds.length / viewedUserIds.size) * 100,
+      rate:
+        viewedUserIds.size === 0
+          ? 0
+          : (convertedUserIds.length / viewedUserIds.size) * 100,
     };
+  }
+
+  /** V9 vong 7 — Report generation (job nen). Report = snapshot JSON cua analytics() tai thoi
+   * diem tao, khong phai file CSV/PDF (tranh them dependency moi cho 1 lat cat). */
+  createReport(requestedBy: bigint) {
+    return this.prisma.report.create({ data: { requestedBy } });
+  }
+
+  markCompleted(id: bigint, data: Prisma.InputJsonValue) {
+    return this.prisma.report.update({
+      where: { id },
+      data: { status: ReportStatus.COMPLETED, data, completedAt: new Date() },
+    });
+  }
+
+  markFailed(id: bigint, errorMessage: string) {
+    return this.prisma.report.update({
+      where: { id },
+      data: {
+        status: ReportStatus.FAILED,
+        errorMessage,
+        completedAt: new Date(),
+      },
+    });
+  }
+
+  async findMany(where: Prisma.ReportWhereInput, skip: number, take: number) {
+    const [items, totalItems] = await Promise.all([
+      this.prisma.report.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.report.count({ where }),
+    ]);
+    return [items, totalItems] as const;
+  }
+
+  findById(id: bigint) {
+    return this.prisma.report.findUnique({ where: { id } });
   }
 }
