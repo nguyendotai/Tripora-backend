@@ -80,7 +80,10 @@ export class PropertyRepository {
   findBySlug(slug: string): Promise<Property | null> {
     return this.prisma.property.findFirst({
       where: { slug, deletedAt: null },
-      include: { destination: { select: { id: true, name: true, slug: true } } },
+      include: {
+        destination: { select: { id: true, name: true, slug: true } },
+        provider: { select: { id: true, name: true, userId: true } },
+      },
     });
   }
 

@@ -53,6 +53,8 @@ model User {
   following          Follow[]            @relation("Follower")
   followers          Follow[]            @relation("Following")
   comments           Comment[]
+  conversations      Conversation[]
+  sentMessages       Message[]
 
   @@map("users")
 }
@@ -229,6 +231,42 @@ model Notification {
   @@map("notifications")
 }
 
+// V9 vong 3 — 1 Conversation/cap (userId, providerId), tai dung lai giua cac san pham khac nhau
+// cua cung 1 Provider thay vi tao moi theo tung booking. Khong track read-state rieng tung nhan
+// vien Provider — ca to chuc la 1 inbox chung, xem Message.isRead.
+model Conversation {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  providerId    BigInt   @map("provider_id")
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  provider Provider  @relation(fields: [providerId], references: [id])
+  messages Message[]
+
+  @@unique([userId, providerId])
+  @@index([providerId])
+  @@map("conversations")
+}
+
+// isRead = da duoc phia con lai doc (khong phai per-staff) — "unread cho Traveler" la message co
+// senderId khac conversation.userId va isRead=false, "unread cho Provider" la nguoc lai.
+model Message {
+  id             BigInt   @id @default(autoincrement())
+  conversationId BigInt   @map("conversation_id")
+  senderId       BigInt   @map("sender_id")
+  content        String   @db.Text
+  isRead         Boolean  @default(false) @map("is_read")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
 enum ProviderType {
   HOTEL
   TOUR
@@ -280,6 +318,7 @@ model Provider {
   flights             Flight[]
   commissions         Commission[]
   promotions          Promotion[]
+  conversations       Conversation[]
 
   @@map("providers")
 }

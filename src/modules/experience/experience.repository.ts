@@ -65,6 +65,7 @@ export class ExperienceRepository {
       where: { slug, deletedAt: null },
       include: {
         destination: { select: { id: true, name: true, slug: true } },
+        provider: { select: { id: true, name: true, userId: true } },
       },
     });
   }
