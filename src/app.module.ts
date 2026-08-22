@@ -47,6 +47,7 @@ import { SavedPostModule } from './modules/saved-post/saved-post.module';
 import { FollowModule } from './modules/follow/follow.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
+import { AnalyticsEventModule } from './modules/analytics-event/analytics-event.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { ConversationModule } from './modules/conversation/conversation.module';
     FollowModule,
     CommentModule,
     ConversationModule,
+    AnalyticsEventModule,
   ],
   controllers: [],
   providers: [],
