@@ -1473,6 +1473,45 @@
             },
             "description": "Yeu cau role ADMIN. Thong ke tong hop: users (theo status), destinations, travelGuides, blogPosts, trips, reviews (tong + diem trung binh), wishlistItems, top 5 Destination duoc wishlist nhieu nhat."
           }
+        },
+        {
+          "name": "Analytics (Platform Dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "analytics"]
+            },
+            "description": "Yeu cau role ADMIN. So lieu marketplace/tai chinh: revenue (platformAmount, tong + 30 ngay gan nhat), bookings (tong + theo domain), providers (theo status), users, conversion (view->booking 30 ngay, chi user da dang nhap)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics Event",
+      "item": [
+        {
+          "name": "Track Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics-events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"VIEW\",\n  \"userId\": \"1\",\n  \"entityType\": \"property\",\n  \"entityId\": \"1\"\n}"
+            },
+            "description": "Khong yeu cau dang nhap (khach an danh bo qua userId). Best-effort, luon 204 No Content. type: SEARCH hoac VIEW."
+          }
         }
       ]
     },

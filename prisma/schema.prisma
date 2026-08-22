@@ -267,6 +267,28 @@ model Message {
   @@map("messages")
 }
 
+enum AnalyticsEventType {
+  SEARCH
+  VIEW
+}
+
+// V9 vong 4 — khong co Prisma relation/FK toi User hay entity (tham chieu polymorphic qua
+// entityType+entityId, mirror dung cach Payment.bookingDomain+bookingId da lam) vi entity co the
+// la Property/Tour/Experience/Destination... khac nhau. userId null = khach an danh.
+model AnalyticsEvent {
+  id         BigInt             @id @default(autoincrement())
+  type       AnalyticsEventType
+  userId     BigInt?            @map("user_id")
+  entityType String?            @map("entity_type")
+  entityId   BigInt?            @map("entity_id")
+  query      String?
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  @@index([type, createdAt])
+  @@index([userId])
+  @@map("analytics_events")
+}
+
 enum ProviderType {
   HOTEL
   TOUR

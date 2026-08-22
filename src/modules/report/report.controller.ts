@@ -18,4 +18,9 @@ export class ReportController {
   overview() {
     return this.reportService.overview();
   }
+
+  @Get('analytics')
+  analytics() {
+    return this.reportService.analytics();
+  }
 }
