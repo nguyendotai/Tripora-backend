@@ -93,7 +93,17 @@ export class VehicleController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewVehicleDto) {
-    return this.vehicleService.review(parseIdParam(id), dto.status, dto.reason);
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewVehicleDto,
+  ) {
+    return this.vehicleService.review(
+      BigInt(user.id),
+      user.role,
+      parseIdParam(id),
+      dto.status,
+      dto.reason,
+    );
   }
 }

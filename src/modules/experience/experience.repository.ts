@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Experience, ExperienceStatus, Prisma } from '@prisma/client';
+import {
+  BookingStatus,
+  Experience,
+  ExperienceStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 const EXPERIENCE_LIST_INCLUDE = {

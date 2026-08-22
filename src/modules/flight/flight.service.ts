@@ -12,6 +12,7 @@ import {
 } from '@prisma/client';
 import { AircraftRepository } from '../aircraft/aircraft.repository';
 import { AirportRepository } from '../airport/airport.repository';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -33,6 +34,7 @@ export class FlightService {
     private readonly aircraftRepository: AircraftRepository,
     private readonly airportRepository: AirportRepository,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — chỉ Flight đã APPROVED. Khách tìm theo cặp sân bay đi/đến (Search SGN → HAN). */
@@ -167,7 +169,13 @@ export class FlightService {
     await this.flightRepository.softDelete(flight.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const flight = await this.flightRepository.findById(id);
     if (!flight) {
       throw new NotFoundException('Flight not found');
@@ -191,6 +199,16 @@ export class FlightService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'flight.review',
+      entityType: 'flight',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }

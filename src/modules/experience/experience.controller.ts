@@ -104,8 +104,14 @@ export class ExperienceController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewExperienceDto) {
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewExperienceDto,
+  ) {
     return this.experienceService.review(
+      BigInt(user.id),
+      user.role,
       parseIdParam(id),
       dto.status,
       dto.reason,

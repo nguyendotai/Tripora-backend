@@ -289,6 +289,26 @@ model AnalyticsEvent {
   @@map("analytics_events")
 }
 
+// Audit log cho cac action nhay cam (review/suspend/xoa moderation/doi commission rate...).
+// Polymorphic (entityType+entityId, khong @relation) vi entity co the la Property/Provider/
+// Comment/User... khac nhau, mirror dung cach AnalyticsEvent da lam.
+model ActivityLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    BigInt   @map("actor_id")
+  actorRole  String   @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   BigInt   @map("entity_id")
+  reason     String?  @db.Text
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
 enum ProviderType {
   HOTEL
   TOUR

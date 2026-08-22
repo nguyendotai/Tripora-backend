@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ProviderType, TourStatus } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
@@ -33,6 +34,7 @@ export class TourService {
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
     private readonly cacheService: CacheService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — chỉ Tour đã APPROVED. */
@@ -193,7 +195,13 @@ export class TourService {
     await this.tourRepository.softDelete(tour.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const tour = await this.tourRepository.findById(id);
     if (!tour) {
       throw new NotFoundException('Tour not found');
@@ -215,6 +223,16 @@ export class TourService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'tour.review',
+      entityType: 'tour',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }

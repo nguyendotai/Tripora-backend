@@ -9,6 +9,7 @@ import {
   buildPaginated,
   resolvePagination,
 } from '../../shared/utils/pagination';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplyProviderDto } from './dto/apply-provider.dto';
 import { ListProvidersDto } from './dto/list-providers.dto';
@@ -21,6 +22,7 @@ export class ProviderService {
     private readonly providerRepository: ProviderRepository,
     private readonly organizationMemberRepository: OrganizationMemberRepository,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async apply(userId: bigint, dto: ApplyProviderDto) {
@@ -84,7 +86,13 @@ export class ProviderService {
     return buildPaginated(items, totalItems, page, limit);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const provider = await this.providerRepository.findById(id);
     if (!provider) {
       throw new NotFoundException('Provider not found');
@@ -109,11 +117,26 @@ export class ProviderService {
         : rejectMessage,
     );
 
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'provider.review',
+      entityType: 'provider',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
+
     return updated;
   }
 
   /** Khoá 1 Provider đang APPROVED — chặn mọi thao tác tự quản lý (Property/Room/Inventory) cho tới khi mở khoá. */
-  async suspend(id: bigint, reason?: string) {
+  async suspend(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    reason?: string,
+  ) {
     const provider = await this.providerRepository.findById(id);
     if (!provider) {
       throw new NotFoundException('Provider not found');
@@ -138,11 +161,20 @@ export class ProviderService {
       message,
     );
 
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'provider.suspend',
+      entityType: 'provider',
+      entityId: id,
+      reason,
+    });
+
     return updated;
   }
 
   /** Mở khoá 1 Provider đang SUSPENDED, trả lại APPROVED. */
-  async unsuspend(id: bigint) {
+  async unsuspend(actorId: bigint, actorRole: string, id: bigint) {
     const provider = await this.providerRepository.findById(id);
     if (!provider) {
       throw new NotFoundException('Provider not found');
@@ -164,15 +196,42 @@ export class ProviderService {
       `Hồ sơ đối tác "${provider.name}" của bạn đã được mở khoá. Bạn có thể tiếp tục quản lý khách sạn.`,
     );
 
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'provider.unsuspend',
+      entityType: 'provider',
+      entityId: id,
+    });
+
     return updated;
   }
 
   /** Chinh ty le hoa hong Platform an tren moi Booking CONFIRMED cua Provider nay (V6 vong 2). */
-  async updateCommissionRate(id: bigint, commissionRate: number) {
+  async updateCommissionRate(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    commissionRate: number,
+  ) {
     const provider = await this.providerRepository.findById(id);
     if (!provider) {
       throw new NotFoundException('Provider not found');
     }
-    return this.providerRepository.updateCommissionRate(id, commissionRate);
+    const updated = await this.providerRepository.updateCommissionRate(
+      id,
+      commissionRate,
+    );
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'provider.updateCommissionRate',
+      entityType: 'provider',
+      entityId: id,
+      metadata: { commissionRate },
+    });
+
+    return updated;
   }
 }

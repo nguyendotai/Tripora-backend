@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ProviderType, VehicleStatus } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { ProviderRepository } from '../provider/provider.repository';
@@ -24,6 +25,7 @@ export class VehicleService {
     private readonly providerRepository: ProviderRepository,
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — chỉ Vehicle đã APPROVED. */
@@ -132,7 +134,13 @@ export class VehicleService {
     await this.vehicleRepository.softDelete(vehicle.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const vehicle = await this.vehicleRepository.findById(id);
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
@@ -154,6 +162,16 @@ export class VehicleService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'vehicle.review',
+      entityType: 'vehicle',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }

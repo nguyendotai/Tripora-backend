@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import { DestinationRepository } from '../destination/destination.repository';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { NotificationService } from '../notification/notification.service';
 import {
   buildPaginated,
@@ -22,6 +23,7 @@ export class PostService {
     private readonly postRepository: PostRepository,
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — Travel Community feed, moi nguoi xem duoc, moi nhat truoc. */
@@ -109,6 +111,15 @@ export class PostService {
         'Bài viết của bạn đã bị gỡ',
         'Một bài viết bạn đăng đã bị quản trị viên gỡ bỏ do vi phạm quy định cộng đồng.',
       );
+
+      await this.activityLogService.log({
+        actorId: userId,
+        actorRole: role,
+        action: 'post.moderationDelete',
+        entityType: 'post',
+        entityId: post.id,
+        metadata: { ownerId: post.userId.toString() },
+      });
     }
   }
 

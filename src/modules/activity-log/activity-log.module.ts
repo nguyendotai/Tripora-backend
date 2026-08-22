@@ -1,0 +1,11 @@
+import { Module } from '@nestjs/common';
+import { ActivityLogController } from './activity-log.controller';
+import { ActivityLogRepository } from './activity-log.repository';
+import { ActivityLogService } from './activity-log.service';
+
+@Module({
+  controllers: [ActivityLogController],
+  providers: [ActivityLogService, ActivityLogRepository],
+  exports: [ActivityLogService],
+})
+export class ActivityLogModule {}

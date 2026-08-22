@@ -102,8 +102,14 @@ export class ProviderController {
   @Patch(':id/review')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  review(@Param('id') id: string, @Body() dto: ReviewProviderDto) {
+  review(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReviewProviderDto,
+  ) {
     return this.providerService.review(
+      BigInt(user.id),
+      user.role,
       parseIdParam(id),
       dto.status,
       dto.reason,
@@ -113,25 +119,41 @@ export class ProviderController {
   @Patch(':id/suspend')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  suspend(@Param('id') id: string, @Body() dto: SuspendProviderDto) {
-    return this.providerService.suspend(parseIdParam(id), dto.reason);
+  suspend(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: SuspendProviderDto,
+  ) {
+    return this.providerService.suspend(
+      BigInt(user.id),
+      user.role,
+      parseIdParam(id),
+      dto.reason,
+    );
   }
 
   @Patch(':id/unsuspend')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  unsuspend(@Param('id') id: string) {
-    return this.providerService.unsuspend(parseIdParam(id));
+  unsuspend(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.providerService.unsuspend(
+      BigInt(user.id),
+      user.role,
+      parseIdParam(id),
+    );
   }
 
   @Patch(':id/commission-rate')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   updateCommissionRate(
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
     @Body() dto: UpdateCommissionRateDto,
   ) {
     return this.providerService.updateCommissionRate(
+      BigInt(user.id),
+      user.role,
       parseIdParam(id),
       dto.commissionRate,
     );

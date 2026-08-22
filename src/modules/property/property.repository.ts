@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma, Property, PropertyStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  Prisma,
+  Property,
+  PropertyStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 const PROPERTY_LIST_INCLUDE = {
@@ -61,13 +66,19 @@ export class PropertyRepository {
   }
 
   /** Gia thap nhat trong so cac Room ACTIVE cua tung Property — dung cho the "tu X d/dem". */
-  async findMinPricesByPropertyIds(propertyIds: bigint[]): Promise<Map<bigint, Prisma.Decimal>> {
+  async findMinPricesByPropertyIds(
+    propertyIds: bigint[],
+  ): Promise<Map<bigint, Prisma.Decimal>> {
     if (propertyIds.length === 0) {
       return new Map();
     }
     const grouped = await this.prisma.room.groupBy({
       by: ['propertyId'],
-      where: { propertyId: { in: propertyIds }, status: 'ACTIVE', deletedAt: null },
+      where: {
+        propertyId: { in: propertyIds },
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
       _min: { basePrice: true },
     });
     return new Map(

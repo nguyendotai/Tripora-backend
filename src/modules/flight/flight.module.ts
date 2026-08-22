@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ActivityLogModule } from '../activity-log/activity-log.module';
 import { AircraftModule } from '../aircraft/aircraft.module';
 import { AirportModule } from '../airport/airport.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -8,7 +9,13 @@ import { FlightRepository } from './flight.repository';
 import { FlightService } from './flight.service';
 
 @Module({
-  imports: [NotificationModule, ProviderModule, AircraftModule, AirportModule],
+  imports: [
+    NotificationModule,
+    ProviderModule,
+    AircraftModule,
+    AirportModule,
+    ActivityLogModule,
+  ],
   controllers: [FlightController],
   providers: [FlightService, FlightRepository],
   exports: [FlightRepository],

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ProviderType, PropertyStatus } from '@prisma/client';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { DestinationRepository } from '../destination/destination.repository';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
@@ -33,6 +34,7 @@ export class PropertyService {
     private readonly destinationRepository: DestinationRepository,
     private readonly notificationService: NotificationService,
     private readonly cacheService: CacheService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /** Public — chỉ Property đã APPROVED, kèm fromPrice (giá thấp nhất trong các Room ACTIVE). */
@@ -205,7 +207,13 @@ export class PropertyService {
     await this.propertyRepository.softDelete(property.id);
   }
 
-  async review(id: bigint, status: 'APPROVED' | 'REJECTED', reason?: string) {
+  async review(
+    actorId: bigint,
+    actorRole: string,
+    id: bigint,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ) {
     const property = await this.propertyRepository.findById(id);
     if (!property) {
       throw new NotFoundException('Property not found');
@@ -231,6 +239,16 @@ export class PropertyService {
           : rejectMessage,
       );
     }
+
+    await this.activityLogService.log({
+      actorId,
+      actorRole,
+      action: 'property.review',
+      entityType: 'property',
+      entityId: id,
+      reason,
+      metadata: { status },
+    });
 
     return updated;
   }
