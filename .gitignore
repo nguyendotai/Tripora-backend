@@ -9,3 +9,7 @@ Thumbs.db
 .vscode/
 .idea/
 coverage/
+
+# AI/agent instruction files — giu lai local cho Claude Code, khong publish len repo
+CLAUDE.md
+.claude/
