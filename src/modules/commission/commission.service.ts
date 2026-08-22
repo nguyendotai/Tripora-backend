@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BookingDomain, Prisma } from '@prisma/client';
 import { OrganizationMemberService } from '../provider/organization-member.service';
+import { ProviderRepository } from '../provider/provider.repository';
 import {
   buildPaginated,
   resolvePagination,
@@ -24,6 +25,7 @@ export class CommissionService {
   constructor(
     private readonly commissionRepository: CommissionRepository,
     private readonly organizationMemberService: OrganizationMemberService,
+    private readonly providerRepository: ProviderRepository,
   ) {}
 
   /**
@@ -73,6 +75,23 @@ export class CommissionService {
         error instanceof Error ? error.stack : error,
       );
     }
+  }
+
+  /** V9 vong 2 — dung boi PaymentService de notify Provider "Booking moi". Tai su dung dung logic
+   * resolve Booking -> Provider da co san o day (PROVIDER_LOOKUP_SQL cho ca 5 domain), tranh viet
+   * lai lan 2 o PaymentModule. */
+  async resolveProviderUserId(
+    bookingDomain: BookingDomain,
+    bookingId: bigint,
+  ): Promise<bigint | null> {
+    const providerId = await this.commissionRepository.resolveProviderId(
+      bookingDomain,
+      bookingId,
+    );
+    if (!providerId) return null;
+
+    const provider = await this.providerRepository.findById(providerId);
+    return provider?.userId ?? null;
   }
 
   /** Admin — xem toan bo Commission, optional loc theo 1 Provider. */

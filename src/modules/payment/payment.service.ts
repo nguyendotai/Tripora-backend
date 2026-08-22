@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BookingDomain, Prisma } from '@prisma/client';
+import { BookingDomain, Payment, Prisma } from '@prisma/client';
 import Stripe from 'stripe';
 import { CommissionService } from '../commission/commission.service';
 import { NotificationService } from '../notification/notification.service';
@@ -294,6 +294,7 @@ export class PaymentService {
             bookingId: payment.bookingId,
             amount: payment.amount,
           });
+          await this.notifyProviderOfNewBooking(payment);
         }
       }
       return;
@@ -341,6 +342,31 @@ export class PaymentService {
         );
         await this.paymentRepository.markRefundFailed(refundId);
       }
+    }
+  }
+
+  /** V9 vong 2 — best-effort, khong duoc nem loi ra ngoai (cung triet ly voi
+   * CommissionService.recordForPayment: loi o day khong duoc lam hong response webhook tra ve
+   * cho Stripe). Booking Staff/Owner/Manager cua Provider deu chua co "inbox" rieng theo Role o
+   * V9 vong 1 nen tam thoi notify thang userId dang ky Provider (mirror provider.service.ts). */
+  private async notifyProviderOfNewBooking(payment: Payment) {
+    try {
+      const providerUserId = await this.commissionService.resolveProviderUserId(
+        payment.bookingDomain,
+        payment.bookingId,
+      );
+      if (!providerUserId) return;
+
+      await this.notificationService.notify(
+        providerUserId,
+        'Booking mới',
+        `Bạn có 1 đơn đặt chỗ mới #${payment.bookingId} vừa được thanh toán thành công.`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify Provider of new booking for payment ${payment.id}`,
+        error instanceof Error ? error.stack : error,
+      );
     }
   }
 
