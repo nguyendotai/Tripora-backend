@@ -9,9 +9,15 @@ import { Prisma, ProviderType, Role } from '@prisma/client';
 import { BookingRepository } from '../booking/booking.repository';
 import { DestinationRepository } from '../destination/destination.repository';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ExperienceRepository } from '../experience/experience.repository';
+import { ExperienceBookingRepository } from '../experience-booking/experience-booking.repository';
+import { FlightRepository } from '../flight/flight.repository';
+import { FlightBookingRepository } from '../flight-booking/flight-booking.repository';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationMemberService } from '../provider/organization-member.service';
 import { PropertyRepository } from '../property/property.repository';
+import { TourRepository } from '../tour/tour.repository';
+import { TourBookingRepository } from '../tour-booking/tour-booking.repository';
 import {
   buildPaginated,
   clampLimit,
@@ -30,6 +36,12 @@ export class ReviewService {
     private readonly destinationRepository: DestinationRepository,
     private readonly propertyRepository: PropertyRepository,
     private readonly bookingRepository: BookingRepository,
+    private readonly tourRepository: TourRepository,
+    private readonly tourBookingRepository: TourBookingRepository,
+    private readonly experienceRepository: ExperienceRepository,
+    private readonly experienceBookingRepository: ExperienceBookingRepository,
+    private readonly flightRepository: FlightRepository,
+    private readonly flightBookingRepository: FlightBookingRepository,
     private readonly organizationMemberService: OrganizationMemberService,
     private readonly notificationService: NotificationService,
     private readonly activityLogService: ActivityLogService,
@@ -50,6 +62,9 @@ export class ReviewService {
         destinationId: BigInt(query.destinationId),
       }),
       ...(query.propertyId && { propertyId: BigInt(query.propertyId) }),
+      ...(query.tourId && { tourId: BigInt(query.tourId) }),
+      ...(query.experienceId && { experienceId: BigInt(query.experienceId) }),
+      ...(query.flightId && { flightId: BigInt(query.flightId) }),
     };
 
     const [items, totalItems] = await this.reviewRepository.findMany(
@@ -60,27 +75,59 @@ export class ReviewService {
     return buildPaginated(items, totalItems, page, limit);
   }
 
-  /** V7 vong 10 — Provider tu xem Review cua toan bo Property minh so huu. Xem khong can permission
+  /** V7 vong 10 — Provider tu xem Review cua toan bo san pham minh so huu. Xem khong can permission
    * rieng, chi can la thanh vien to chuc (mirror PropertyService.getOwnedApprovedProvider — cung
-   * nguyen tac "xem tai san cua to chuc minh khong can quyen manage"). */
+   * nguyen tac "xem tai san cua to chuc minh khong can quyen manage").
+   * V7 vong 12 — tong quat hoa tu chi Hotel sang ca Tour/Experience/Flight, dispatch theo
+   * provider.type. Khong truyen providerType filter cho requireMembership (chap nhan moi Provider
+   * APPROVED), roi tu switch loai bo Transport ro rang (Review chua co cot vehicleId/routeId). */
   async listMineAsProvider(userId: bigint, query: ListReviewsDto) {
     const { provider } = await this.organizationMemberService.requireMembership(
       userId,
-      { providerType: ProviderType.HOTEL },
-    );
-    const propertyIds = await this.propertyRepository.findIdsByProviderId(
-      provider.id,
+      {},
     );
 
+    let targetIds: bigint[];
+    let where: Prisma.ReviewWhereInput;
+    switch (provider.type) {
+      case ProviderType.TOUR: {
+        targetIds = await this.tourRepository.findIdsByProviderId(provider.id);
+        where = { deletedAt: null, tourId: { in: targetIds } };
+        break;
+      }
+      case ProviderType.ACTIVITY: {
+        targetIds = await this.experienceRepository.findIdsByProviderId(
+          provider.id,
+        );
+        where = { deletedAt: null, experienceId: { in: targetIds } };
+        break;
+      }
+      case ProviderType.FLIGHT: {
+        targetIds = await this.flightRepository.findIdsByProviderId(
+          provider.id,
+        );
+        where = { deletedAt: null, flightId: { in: targetIds } };
+        break;
+      }
+      case ProviderType.HOTEL: {
+        targetIds = await this.propertyRepository.findIdsByProviderId(
+          provider.id,
+        );
+        where = { deletedAt: null, propertyId: { in: targetIds } };
+        break;
+      }
+      default: {
+        throw new ForbiddenException(
+          'Reviews are not available for this provider type yet',
+        );
+      }
+    }
+
     const { page, limit, skip, take } = resolvePagination(query);
-    if (propertyIds.length === 0) {
+    if (targetIds.length === 0) {
       return buildPaginated([], 0, page, limit);
     }
 
-    const where: Prisma.ReviewWhereInput = {
-      deletedAt: null,
-      propertyId: { in: propertyIds },
-    };
     const [items, totalItems] = await this.reviewRepository.findMany(
       where,
       skip,
@@ -90,14 +137,30 @@ export class ReviewService {
   }
 
   async create(userId: bigint, dto: CreateReviewDto) {
-    if (!!dto.destinationId === !!dto.propertyId) {
+    const targets = [
+      dto.destinationId,
+      dto.propertyId,
+      dto.tourId,
+      dto.experienceId,
+      dto.flightId,
+    ];
+    if (targets.filter(Boolean).length !== 1) {
       throw new BadRequestException(
-        'Provide exactly one of destinationId or propertyId',
+        'Provide exactly one of destinationId, propertyId, tourId, experienceId, or flightId',
       );
     }
 
     if (dto.propertyId) {
       return this.createForProperty(userId, BigInt(dto.propertyId), dto);
+    }
+    if (dto.tourId) {
+      return this.createForTour(userId, BigInt(dto.tourId), dto);
+    }
+    if (dto.experienceId) {
+      return this.createForExperience(userId, BigInt(dto.experienceId), dto);
+    }
+    if (dto.flightId) {
+      return this.createForFlight(userId, BigInt(dto.flightId), dto);
     }
     return this.createForDestination(userId, BigInt(dto.destinationId!), dto);
   }
@@ -181,6 +244,143 @@ export class ReviewService {
       content: dto.content,
       user: { connect: { id: userId } },
       property: { connect: { id: propertyId } },
+    });
+  }
+
+  /** V7 vong 12 — mirror y het createForProperty, doi sang Tour + hasConfirmedBookingForTour. */
+  private async createForTour(
+    userId: bigint,
+    tourId: bigint,
+    dto: CreateReviewDto,
+  ) {
+    const tour = await this.tourRepository.findById(tourId);
+    if (!tour) {
+      throw new BadRequestException(`Tour not found: ${tourId}`);
+    }
+
+    const hasBooked =
+      await this.tourBookingRepository.hasConfirmedBookingForTour(
+        userId,
+        tourId,
+      );
+    if (!hasBooked) {
+      throw new ForbiddenException(
+        'You need a confirmed booking for this tour before reviewing',
+      );
+    }
+
+    const existing = await this.reviewRepository.findByUserAndTour(
+      userId,
+      tourId,
+    );
+    if (existing) {
+      if (!existing.deletedAt) {
+        throw new ConflictException('You have already reviewed this tour');
+      }
+      return this.reviewRepository.update(existing.id, {
+        rating: dto.rating,
+        content: dto.content,
+        deletedAt: null,
+      });
+    }
+
+    return this.reviewRepository.create({
+      rating: dto.rating,
+      content: dto.content,
+      user: { connect: { id: userId } },
+      tour: { connect: { id: tourId } },
+    });
+  }
+
+  /** V7 vong 12 — mirror y het createForProperty, doi sang Experience + hasConfirmedBookingForExperience. */
+  private async createForExperience(
+    userId: bigint,
+    experienceId: bigint,
+    dto: CreateReviewDto,
+  ) {
+    const experience = await this.experienceRepository.findById(experienceId);
+    if (!experience) {
+      throw new BadRequestException(`Experience not found: ${experienceId}`);
+    }
+
+    const hasBooked =
+      await this.experienceBookingRepository.hasConfirmedBookingForExperience(
+        userId,
+        experienceId,
+      );
+    if (!hasBooked) {
+      throw new ForbiddenException(
+        'You need a confirmed booking for this experience before reviewing',
+      );
+    }
+
+    const existing = await this.reviewRepository.findByUserAndExperience(
+      userId,
+      experienceId,
+    );
+    if (existing) {
+      if (!existing.deletedAt) {
+        throw new ConflictException(
+          'You have already reviewed this experience',
+        );
+      }
+      return this.reviewRepository.update(existing.id, {
+        rating: dto.rating,
+        content: dto.content,
+        deletedAt: null,
+      });
+    }
+
+    return this.reviewRepository.create({
+      rating: dto.rating,
+      content: dto.content,
+      user: { connect: { id: userId } },
+      experience: { connect: { id: experienceId } },
+    });
+  }
+
+  /** V7 vong 12 — mirror y het createForProperty, doi sang Flight + hasConfirmedBookingForFlight. */
+  private async createForFlight(
+    userId: bigint,
+    flightId: bigint,
+    dto: CreateReviewDto,
+  ) {
+    const flight = await this.flightRepository.findById(flightId);
+    if (!flight) {
+      throw new BadRequestException(`Flight not found: ${flightId}`);
+    }
+
+    const hasBooked =
+      await this.flightBookingRepository.hasConfirmedBookingForFlight(
+        userId,
+        flightId,
+      );
+    if (!hasBooked) {
+      throw new ForbiddenException(
+        'You need a confirmed booking for this flight before reviewing',
+      );
+    }
+
+    const existing = await this.reviewRepository.findByUserAndFlight(
+      userId,
+      flightId,
+    );
+    if (existing) {
+      if (!existing.deletedAt) {
+        throw new ConflictException('You have already reviewed this flight');
+      }
+      return this.reviewRepository.update(existing.id, {
+        rating: dto.rating,
+        content: dto.content,
+        deletedAt: null,
+      });
+    }
+
+    return this.reviewRepository.create({
+      rating: dto.rating,
+      content: dto.content,
+      user: { connect: { id: userId } },
+      flight: { connect: { id: flightId } },
     });
   }
 

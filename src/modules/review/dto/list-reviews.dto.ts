@@ -11,6 +11,18 @@ export class ListReviewsDto {
   propertyId?: string;
 
   @IsOptional()
+  @IsNumberString()
+  tourId?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  experienceId?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  flightId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

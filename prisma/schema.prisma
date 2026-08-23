@@ -137,6 +137,9 @@ model Review {
   userId        BigInt    @map("user_id")
   destinationId BigInt?   @map("destination_id")
   propertyId    BigInt?   @map("property_id")
+  tourId        BigInt?   @map("tour_id")
+  experienceId  BigInt?   @map("experience_id")
+  flightId      BigInt?   @map("flight_id")
   rating        Int
   content       String?   @db.Text
   createdAt     DateTime  @default(now()) @map("created_at")
@@ -146,11 +149,20 @@ model Review {
   user        User         @relation(fields: [userId], references: [id])
   destination Destination? @relation(fields: [destinationId], references: [id])
   property    Property?    @relation(fields: [propertyId], references: [id])
+  tour        Tour?        @relation(fields: [tourId], references: [id])
+  experience  Experience?  @relation(fields: [experienceId], references: [id])
+  flight      Flight?      @relation(fields: [flightId], references: [id])
 
   @@unique([userId, destinationId])
   @@unique([userId, propertyId])
+  @@unique([userId, tourId])
+  @@unique([userId, experienceId])
+  @@unique([userId, flightId])
   @@index([destinationId])
   @@index([propertyId])
+  @@index([tourId])
+  @@index([experienceId])
+  @@index([flightId])
   @@map("reviews")
 }
 
@@ -593,6 +605,7 @@ model Tour {
   itineraries TourItinerary[]
   schedules   TourSchedule[]
   bookings    TourBooking[]
+  reviews     Review[]
 
   @@index([providerId])
   @@index([destinationId])
@@ -738,6 +751,7 @@ model Experience {
   destination Destination?         @relation(fields: [destinationId], references: [id])
   schedules   ExperienceSchedule[]
   bookings    ExperienceBooking[]
+  reviews     Review[]
 
   @@index([providerId])
   @@index([destinationId])
@@ -1047,6 +1061,7 @@ model Flight {
   departureAirport Airport          @relation("DepartureAirport", fields: [departureAirportId], references: [id])
   arrivalAirport   Airport          @relation("ArrivalAirport", fields: [arrivalAirportId], references: [id])
   schedules        FlightSchedule[]
+  reviews          Review[]
 
   @@index([providerId])
   @@index([aircraftId])

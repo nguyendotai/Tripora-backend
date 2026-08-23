@@ -40,6 +40,15 @@ export class FlightRepository {
     });
   }
 
+  /** Mirror PropertyRepository.findIdsByProviderId — dung de gom Review cua toan bo Flight thuoc 1 Provider. */
+  async findIdsByProviderId(providerId: bigint): Promise<bigint[]> {
+    const rows = await this.prisma.flight.findMany({
+      where: { providerId, deletedAt: null },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   create(data: Prisma.FlightCreateInput): Promise<Flight> {
     return this.prisma.flight.create({ data });
   }

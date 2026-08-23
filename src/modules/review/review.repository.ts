@@ -12,6 +12,9 @@ const REVIEW_HIGHLIGHT_INCLUDE = {
   user: { select: { id: true, firstName: true, lastName: true, avatar: true } },
   property: { select: { id: true, name: true, slug: true } },
   destination: { select: { id: true, name: true, slug: true } },
+  tour: { select: { id: true, title: true, slug: true } },
+  experience: { select: { id: true, title: true, slug: true } },
+  flight: { select: { id: true, flightNumber: true } },
 } satisfies Prisma.ReviewInclude;
 
 @Injectable()
@@ -64,6 +67,30 @@ export class ReviewRepository {
   ): Promise<Review | null> {
     return this.prisma.review.findUnique({
       where: { userId_propertyId: { userId, propertyId } },
+    });
+  }
+
+  findByUserAndTour(userId: bigint, tourId: bigint): Promise<Review | null> {
+    return this.prisma.review.findUnique({
+      where: { userId_tourId: { userId, tourId } },
+    });
+  }
+
+  findByUserAndExperience(
+    userId: bigint,
+    experienceId: bigint,
+  ): Promise<Review | null> {
+    return this.prisma.review.findUnique({
+      where: { userId_experienceId: { userId, experienceId } },
+    });
+  }
+
+  findByUserAndFlight(
+    userId: bigint,
+    flightId: bigint,
+  ): Promise<Review | null> {
+    return this.prisma.review.findUnique({
+      where: { userId_flightId: { userId, flightId } },
     });
   }
 

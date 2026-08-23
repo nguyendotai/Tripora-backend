@@ -7,7 +7,8 @@ import {
   Min,
 } from 'class-validator';
 
-// V7 vong 9 — destinationId va propertyId deu optional, dung dung 1 trong 2 (XOR, validate o Service).
+// V7 vong 9 — destinationId/propertyId optional, dung dung 1 trong so cac field target (XOR, validate
+// o Service). V7 vong 12 — them tourId/experienceId/flightId, cung nguyen tac.
 export class CreateReviewDto {
   @IsOptional()
   @IsNumberString()
@@ -16,6 +17,18 @@ export class CreateReviewDto {
   @IsOptional()
   @IsNumberString()
   propertyId?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  tourId?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  experienceId?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  flightId?: string;
 
   @IsInt()
   @Min(1)

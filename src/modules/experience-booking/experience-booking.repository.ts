@@ -104,6 +104,21 @@ export class ExperienceBookingRepository {
     return this.prisma.experienceBooking.findUnique({ where: { id } });
   }
 
+  /** Mirror BookingRepository.hasConfirmedBookingForProperty — dieu kien "da mua" truoc khi cho Review Experience. */
+  async hasConfirmedBookingForExperience(
+    userId: bigint,
+    experienceId: bigint,
+  ): Promise<boolean> {
+    const count = await this.prisma.experienceBooking.count({
+      where: {
+        userId,
+        experienceId,
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
+      },
+    });
+    return count > 0;
+  }
+
   /** Admin — xem toan bo ExperienceBooking cua moi User. */
   async findAll(
     where: Prisma.ExperienceBookingWhereInput,
