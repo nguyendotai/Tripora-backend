@@ -23,7 +23,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         throttlers: [{ limit: 5, ttl: 60000 }],
-        storage: new ThrottlerStorageRedisService(config.get<string>('REDIS_URL')),
+        storage: new ThrottlerStorageRedisService(
+          config.get<string>('REDIS_URL'),
+        ),
       }),
     }),
   ],

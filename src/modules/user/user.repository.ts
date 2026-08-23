@@ -19,6 +19,7 @@ export class UserRepository {
     passwordHash: string;
     firstName?: string;
     lastName?: string;
+    avatar?: string;
   }): Promise<User> {
     return this.prisma.user.create({ data });
   }
