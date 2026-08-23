@@ -13,3 +13,8 @@ coverage/
 # AI/agent instruction files — giu lai local cho Claude Code, khong publish len repo
 CLAUDE.md
 .claude/
+
+# Scratch scripts (chua thong tin/credential dung de test thu cong) va Postman collection —
+# khong can de chay du an, giu lai local
+/scripts/
+/postman/
