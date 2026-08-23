@@ -18,7 +18,12 @@ interface JwtPayload {
  * nhan duoc — cung kieu phong se dung lai cho Chat (conversation:<id>) o vong sau. */
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:3002', 'http://localhost:3003'],
+    origin: (
+      process.env.CORS_ORIGINS ?? 'http://localhost:3002,http://localhost:3003'
+    )
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     credentials: true,
   },
 })

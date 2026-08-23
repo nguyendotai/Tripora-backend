@@ -17,8 +17,14 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
+  const corsOrigins = (
+    process.env.CORS_ORIGINS ?? 'http://localhost:3002,http://localhost:3003'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: ['http://localhost:3002', 'http://localhost:3003'],
+    origin: corsOrigins,
     credentials: true,
   });
 
