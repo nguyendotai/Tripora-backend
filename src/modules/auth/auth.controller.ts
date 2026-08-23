@@ -14,6 +14,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { sanitizeUser } from '../user/user.mapper';
 import { AuthService } from './auth.service';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -32,7 +33,8 @@ export class AuthController {
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken, user } = await this.authService.register(dto);
+    const { accessToken, refreshToken, user } =
+      await this.authService.register(dto);
     this.setRefreshCookie(res, refreshToken);
     return { accessToken, user: sanitizeUser(user) };
   }
@@ -44,7 +46,21 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken, user } = await this.authService.login(dto);
+    const { accessToken, refreshToken, user } =
+      await this.authService.login(dto);
+    this.setRefreshCookie(res, refreshToken);
+    return { accessToken, user: sanitizeUser(user) };
+  }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  async google(
+    @Body() dto: GoogleAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, user } =
+      await this.authService.loginWithGoogle(dto.idToken);
     this.setRefreshCookie(res, refreshToken);
     return { accessToken, user: sanitizeUser(user) };
   }
@@ -68,10 +84,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const raw = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
     if (raw) {
       await this.authService.logout(raw);
