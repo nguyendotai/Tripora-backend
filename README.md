@@ -1,64 +1,79 @@
-# Tripora Backend
+# Tripora — Backend API
 
-REST API cho Tripora — NestJS + Prisma + MySQL. Roadmap theo phase: xem `../phases/README.md` (V1 → V9).
+REST API powering **Tripora**, a full-stack travel marketplace: hotel, tour, experience, transport and flight booking, Stripe payments, a multi-tenant provider marketplace with RBAC, and a real-time social layer — built incrementally across 9 shipped phases (V1 → V9).
+
+Part of a 3-repo system: this API, a [customer-facing Next.js app](https://github.com/nguyendotai/Tripora-site), and an [admin/provider dashboard](https://github.com/nguyendotai/Tripora-admin).
+
+![Swagger API docs](docs/screenshots/swagger.png)
+
+## Highlights
+
+- **49 domain modules, 250+ REST endpoints** — Auth, 5 independent booking domains (Hotel/Tour/Experience/Transport/Flight), Payment, Coupon/Promotion, Refund, Commission, Provider Marketplace, Social (Posts/Follow/Comment), Realtime, Analytics.
+- **Multi-tenant Provider Marketplace with RBAC** — `OrganizationMember` roles (Owner / Manager / Booking Staff / Finance Staff), a static permission matrix enforced per-endpoint, no data leaks across tenants.
+- **Real payment processing** — Stripe Checkout + webhooks (signature-verified), tiered cancellation refunds, coupon/promotion discounting, per-provider commission accounting.
+- **Anti-overselling by design** — every booking path decrements inventory atomically inside a DB transaction (`UPDATE ... WHERE available >= qty`, checked via affected-row count) instead of read-then-write, including a seat-level allocation strategy for flights.
+- **Realtime + background processing** — Socket.IO push notifications and chat, Redis-backed caching/rate-limiting, BullMQ queues for notifications, booking expiration, and async report generation.
+- **Auth** — JWT access/refresh tokens, Google Sign-In (ID token verification), role-based guards.
 
 ## Tech Stack
-NestJS, TypeScript, Prisma ORM, MySQL (InnoDB), JWT (Access/Refresh), class-validator/class-transformer, Swagger (API Docs). Redis/BullMQ/Socket.IO/Cloudinary/SMTP sẽ thêm dần khi tới phase cần — xem `CLAUDE.md` mục 1.
 
-Xem quy tắc phát triển đầy đủ tại `CLAUDE.md` và `../.claude/*.md`.
+| Layer | Choice |
+| :--- | :--- |
+| Framework | [NestJS](https://nestjs.com/) (TypeScript) |
+| Database | MySQL (InnoDB) via [Prisma ORM](https://www.prisma.io/) |
+| Auth | JWT (access + refresh), Passport, Google OAuth ID token verification |
+| Payments | [Stripe](https://stripe.com/) (Checkout Sessions + webhooks) |
+| Realtime | Socket.IO |
+| Cache / Queues | Redis, [BullMQ](https://docs.bullmq.io/) |
+| Media | Cloudinary |
+| Validation | class-validator / class-transformer |
+| API Docs | Swagger / OpenAPI |
+
+## Architecture Notes
+
+A few decisions worth calling out to anyone reading the code:
+
+- **Single source of truth for business logic.** Both frontend apps only call this API — pricing, discounting, inventory, and refund calculations never happen client-side.
+- **5 separate booking tables, one shared `BookingStatus` enum**, instead of a single polymorphic table — each domain (hotel nights, tour/experience seats-per-day, transport seats, flight seats) has a genuinely different inventory shape, so keeping them distinct kept every query simple and type-safe rather than forcing a lowest-common-denominator schema.
+- **`Provider.type` drives dispatch everywhere a feature spans domains** (commissions, occupancy analytics, "my reviews") — since one provider only ever sells one product type, a `switch` on that single enum replaces what would otherwise be 5x duplicated logic.
+- **Payments reference bookings polymorphically** (`bookingDomain` + `bookingId`, not a Prisma relation) specifically to avoid `PaymentModule` importing all 5 booking modules and creating a circular dependency graph.
+- **Additive-only schema evolution.** New product types (e.g. extending Reviews from Hotel-only to Tour/Experience/Flight) are shipped as new nullable FK columns + unique constraints, never breaking changes to existing ones.
 
 ## Getting Started
 
 ```bash
 npm install
-cp .env.example .env   # chỉnh DATABASE_URL (MySQL) + JWT secret
+cp .env.example .env   # fill in DATABASE_URL, JWT secrets, and (optionally) Stripe/Cloudinary/Google keys
 npm run prisma:generate
-npm run prisma:migrate   # cần MySQL đang chạy, khớp DATABASE_URL
+npm run prisma:migrate   # requires a running MySQL instance matching DATABASE_URL
 npm run start:dev
 ```
 
-API mặc định chạy tại `http://localhost:5550/api/v1`, Swagger docs tại `http://localhost:5550/docs`.
+The API runs at `http://localhost:5550/api/v1`, with interactive Swagger docs at `http://localhost:5550/docs`.
 
-## Test API bằng Postman
-Import cả 2 file trong `postman/` vào Postman: `tripora-api.postman_collection.json` (nhóm theo module: Auth, User, Destination) và `tripora-api.postman_environment.json` (biến `baseUrl`). Chọn environment **Tripora Local** trước khi chạy. Chạy `Auth > Register` hoặc `Login` trước — Test script tự lưu `accessToken` vào biến collection để các request sau dùng lại.
+> Redis is required to boot (caching, rate limiting, BullMQ) — see `.env.example` for `REDIS_URL`. Stripe/Cloudinary/Google credentials are only needed to exercise those specific flows; the app runs without them for everything else.
 
-## Account Scripts (tạo/sửa/xoá tài khoản theo role)
-Chưa có UI đăng ký Admin (API `register` luôn tạo role `USER`) nên dùng 3 script dưới đây để thao tác trực tiếp trên DB — hữu ích để tạo tài khoản ADMIN đầu tiên hoặc quản lý tài khoản khi cần. **Cách dùng: mở file, sửa giá trị trong khối CONFIG ở đầu file, lưu lại, rồi chạy lệnh — không cần truyền tham số dòng lệnh.**
+## Project Structure
 
-```bash
-# 1. Mở scripts/create-account.ts, sửa email/password/role/firstName/lastName trong khối CONFIG
-# 2. Chạy:
-npm run account:create
-
-# Tương tự cho sửa tài khoản (đổi role, status, mật khẩu...) — sửa CONFIG trong scripts/update-account.ts rồi:
-npm run account:update
-
-# Xoá tài khoản (mặc định soft delete — đúng quy ước `deleted_at` toàn hệ thống,
-# đặt hardDelete = true trong file để xoá vĩnh viễn) — sửa CONFIG trong scripts/delete-account.ts rồi:
-npm run account:delete
-```
-
-Chi tiết từng script (comment đầu file) trong `scripts/create-account.ts`, `scripts/update-account.ts`, `scripts/delete-account.ts`.
-
-## Cấu trúc thư mục
 ```
 src/
-  modules/     # mỗi domain 1 module (auth, user, destination, ...)
-  common/      # decorator, guard dùng chung (roles, current-user...)
-  database/    # PrismaService/DatabaseModule
-  shared/      # utils dùng chung (pagination, slugify, parse-id...)
-scripts/       # CLI script thao tác trực tiếp DB (tạo/sửa/xoá tài khoản...)
+  modules/     # one module per domain (auth, property, tour-booking, payment, review, ...)
+  common/      # shared decorators/guards (roles, current-user, ...)
+  database/    # PrismaService / DatabaseModule
+  redis/       # cache + BullMQ queue wiring
+  shared/      # cross-cutting utils (pagination, slugify, id parsing, ...)
 prisma/
   schema.prisma
-postman/
-  tripora-api.postman_collection.json
-  tripora-api.postman_environment.json
+  migrations/
 ```
 
 ## Scripts
-- `npm run start:dev` — chạy dev (watch mode)
-- `npm run build` — build production
-- `npm run lint` — lint + auto-fix
-- `npm run prisma:migrate` — tạo/áp dụng migration (dev)
-- `npm run prisma:studio` — mở Prisma Studio
-- `npm run account:create` / `account:update` / `account:delete` — xem mục Account Scripts ở trên
+
+| Command | Description |
+| :--- | :--- |
+| `npm run start:dev` | Start in watch mode |
+| `npm run build` | Production build |
+| `npm run lint` | Lint + auto-fix |
+| `npm run test` | Unit tests |
+| `npm run prisma:migrate` | Create/apply a dev migration |
+| `npm run prisma:studio` | Open Prisma Studio |
