@@ -71,4 +71,12 @@ export class TransportScheduleRepository {
       },
     });
   }
+
+  /** V9 vong 8 — Occupancy Provider. */
+  findByProviderSince(providerId: bigint, since: Date) {
+    return this.prisma.transportSchedule.findMany({
+      where: { route: { providerId }, departureDate: { gte: since } },
+      select: { departureDate: true, capacity: true, booked: true },
+    });
+  }
 }

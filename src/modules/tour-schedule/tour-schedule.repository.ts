@@ -85,4 +85,12 @@ export class TourScheduleRepository {
       },
     });
   }
+
+  /** V9 vong 8 — Occupancy Provider. */
+  findByProviderSince(providerId: bigint, since: Date) {
+    return this.prisma.tourSchedule.findMany({
+      where: { tour: { providerId }, departureDate: { gte: since } },
+      select: { departureDate: true, capacity: true, booked: true },
+    });
+  }
 }

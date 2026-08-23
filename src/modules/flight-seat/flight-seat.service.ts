@@ -8,7 +8,8 @@ export class FlightSeatService {
 
   /** Public — chỉ khi Flight cha đã APPROVED. Dùng cho bước "Select Seat". */
   async list(scheduleId: bigint) {
-    const schedule = await this.flightSeatRepository.findScheduleWithFlight(scheduleId);
+    const schedule =
+      await this.flightSeatRepository.findScheduleWithFlight(scheduleId);
     if (!schedule || schedule.flight.status !== FlightStatus.APPROVED) {
       throw new NotFoundException('Flight schedule not found');
     }

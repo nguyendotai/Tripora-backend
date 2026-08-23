@@ -26,10 +26,20 @@ export function generateSeatNumbers(
   economyCapacity: number,
 ): { seatNumber: string; class: SeatClass }[] {
   const business = generateRows(businessCapacity, BUSINESS_LETTERS, 1);
-  const economy = generateRows(economyCapacity, ECONOMY_LETTERS, business.nextRow + 1);
+  const economy = generateRows(
+    economyCapacity,
+    ECONOMY_LETTERS,
+    business.nextRow + 1,
+  );
 
   return [
-    ...business.seatNumbers.map((seatNumber) => ({ seatNumber, class: SeatClass.BUSINESS })),
-    ...economy.seatNumbers.map((seatNumber) => ({ seatNumber, class: SeatClass.ECONOMY })),
+    ...business.seatNumbers.map((seatNumber) => ({
+      seatNumber,
+      class: SeatClass.BUSINESS,
+    })),
+    ...economy.seatNumbers.map((seatNumber) => ({
+      seatNumber,
+      class: SeatClass.ECONOMY,
+    })),
   ];
 }
