@@ -104,6 +104,21 @@ export class TourBookingRepository {
     return this.prisma.tourBooking.findUnique({ where: { id } });
   }
 
+  /** Mirror BookingRepository.hasConfirmedBookingForProperty — dieu kien "da mua" truoc khi cho Review Tour. */
+  async hasConfirmedBookingForTour(
+    userId: bigint,
+    tourId: bigint,
+  ): Promise<boolean> {
+    const count = await this.prisma.tourBooking.count({
+      where: {
+        userId,
+        tourId,
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
+      },
+    });
+    return count > 0;
+  }
+
   /** Admin — xem toan bo TourBooking cua moi User. */
   async findAll(
     where: Prisma.TourBookingWhereInput,

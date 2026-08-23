@@ -83,6 +83,15 @@ export class ExperienceRepository {
     return this.prisma.experience.findFirst({ where: { id, deletedAt: null } });
   }
 
+  /** Mirror PropertyRepository.findIdsByProviderId — dung de gom Review cua toan bo Experience thuoc 1 Provider. */
+  async findIdsByProviderId(providerId: bigint): Promise<bigint[]> {
+    const rows = await this.prisma.experience.findMany({
+      where: { providerId, deletedAt: null },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   create(data: Prisma.ExperienceCreateInput): Promise<Experience> {
     return this.prisma.experience.create({ data });
   }

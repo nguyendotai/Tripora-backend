@@ -78,6 +78,15 @@ export class TourRepository {
     return this.prisma.tour.findFirst({ where: { id, deletedAt: null } });
   }
 
+  /** Mirror PropertyRepository.findIdsByProviderId — dung de gom Review cua toan bo Tour thuoc 1 Provider. */
+  async findIdsByProviderId(providerId: bigint): Promise<bigint[]> {
+    const rows = await this.prisma.tour.findMany({
+      where: { providerId, deletedAt: null },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
   create(data: Prisma.TourCreateInput): Promise<Tour> {
     return this.prisma.tour.create({ data });
   }

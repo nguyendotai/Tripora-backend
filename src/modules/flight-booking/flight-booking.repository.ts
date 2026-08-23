@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FlightBooking, Prisma } from '@prisma/client';
+import { BookingStatus, FlightBooking, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 class SoldOutError extends Error {
@@ -103,6 +103,22 @@ export class FlightBookingRepository {
       where: { id },
       include: { passengers: { select: passengerSelect } },
     });
+  }
+
+  /** Mirror BookingRepository.hasConfirmedBookingForProperty — FlightBooking khong co flightId truc
+   * tiep, chi co scheduleId -> FlightSchedule.flightId, nen loc qua nested filter tren relation. */
+  async hasConfirmedBookingForFlight(
+    userId: bigint,
+    flightId: bigint,
+  ): Promise<boolean> {
+    const count = await this.prisma.flightBooking.count({
+      where: {
+        userId,
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
+        schedule: { flightId },
+      },
+    });
+    return count > 0;
   }
 
   /** Admin — xem toan bo FlightBooking cua moi User. */
