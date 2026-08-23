@@ -57,4 +57,12 @@ export class ExperienceScheduleRepository {
       },
     });
   }
+
+  /** V9 vong 8 — Occupancy Provider. */
+  findByProviderSince(providerId: bigint, since: Date) {
+    return this.prisma.experienceSchedule.findMany({
+      where: { experience: { providerId }, departureDate: { gte: since } },
+      select: { departureDate: true, capacity: true, booked: true },
+    });
+  }
 }

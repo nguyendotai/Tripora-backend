@@ -47,4 +47,15 @@ export class FlightSeatRepository {
       })),
     });
   }
+
+  /** V9 vong 8 — Occupancy Provider. Khac 4 domain kia — moi row la 1 ghe vat ly, khong co cot
+   * dem san, phai tra ve row-per-seat de Service tu dem theo ngay (qua schedule.departureDate). */
+  findByProviderSince(providerId: bigint, since: Date) {
+    return this.prisma.flightSeat.findMany({
+      where: {
+        schedule: { flight: { providerId }, departureDate: { gte: since } },
+      },
+      select: { status: true, schedule: { select: { departureDate: true } } },
+    });
+  }
 }

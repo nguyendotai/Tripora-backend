@@ -51,6 +51,7 @@ import { CommentModule } from './modules/comment/comment.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { AnalyticsEventModule } from './modules/analytics-event/analytics-event.module';
 import { ActivityLogModule } from './modules/activity-log/activity-log.module';
+import { OccupancyModule } from './modules/occupancy/occupancy.module';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { ActivityLogModule } from './modules/activity-log/activity-log.module';
     ConversationModule,
     AnalyticsEventModule,
     ActivityLogModule,
+    OccupancyModule,
   ],
   controllers: [],
   providers: [],

@@ -54,4 +54,12 @@ export class RoomInventoryRepository {
       },
     });
   }
+
+  /** V9 vong 8 — Occupancy Provider. */
+  findByProviderSince(providerId: bigint, since: Date) {
+    return this.prisma.roomInventory.findMany({
+      where: { room: { property: { providerId } }, date: { gte: since } },
+      select: { date: true, totalRooms: true, bookedRooms: true },
+    });
+  }
 }
