@@ -15,7 +15,7 @@ import { REDIS_CLIENT } from './redis.constants';
       provide: REDIS_CLIENT,
       inject: [ConfigService],
       useFactory: (config: ConfigService) =>
-        new Redis(config.get<string>('REDIS_URL') ?? 'redis://localhost:6379'),
+        new Redis(config.get<string>('REDIS_URL') || 'redis://localhost:6379'),
     },
     CacheService,
   ],

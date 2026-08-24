@@ -65,7 +65,7 @@ import { OccupancyModule } from './modules/occupancy/occupancy.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const url = new URL(
-          config.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+          config.get<string>('REDIS_URL') || 'redis://localhost:6379',
         );
         return {
           connection: {
