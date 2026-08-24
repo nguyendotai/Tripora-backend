@@ -1,7 +1,4 @@
 -- DropForeignKey
-ALTER TABLE `promotions` DROP FOREIGN KEY `promotions_provider_id_fkey`;
-
--- DropForeignKey
 ALTER TABLE `reviews` DROP FOREIGN KEY `reviews_destination_id_fkey`;
 
 -- DropForeignKey
@@ -28,9 +25,6 @@ ALTER TABLE `reviews` ADD CONSTRAINT `reviews_destination_id_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `reviews` ADD CONSTRAINT `reviews_property_id_fkey` FOREIGN KEY (`property_id`) REFERENCES `properties`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `promotions` ADD CONSTRAINT `promotions_provider_id_fkey` FOREIGN KEY (`provider_id`) REFERENCES `providers`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `posts` ADD CONSTRAINT `posts_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
