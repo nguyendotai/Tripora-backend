@@ -4,6 +4,9 @@ REST API powering **Tripora**, a full-stack travel marketplace: hotel, tour, exp
 
 Part of a 3-repo system: this API, a [customer-facing Next.js app](https://github.com/nguyendotai/Tripora-site), and an [admin/provider dashboard](https://github.com/nguyendotai/Tripora-admin).
 
+**🔗 Live API:** [tripora-backend-1932.onrender.com](https://tripora-backend-1932.onrender.com) · **Swagger docs:** [/docs](https://tripora-backend-1932.onrender.com/docs)
+> Hosted on a free instance — the first request after a period of inactivity can take 30–60s to wake up.
+
 ![Swagger API docs](docs/screenshots/swagger.png)
 
 ## Highlights
